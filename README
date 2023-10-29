@@ -1,0 +1,26 @@
+# Using the Makefile
+
+A Makefile is here to help you build and launch the Docker image.
+
+## Targets
+
+* build: Builds the image
+* run: Launches the image
+* launch: Builds and launches the image
+
+## Usage examples
+
+### Build the image
+__make build__
+
+### Launch the image in interactive mode.
+__make run__
+
+### Build and launch the image
+__make launch__
+
+
+## Notes
+The environment variables IMAGE_NAME and TAG are used to define the name and version of the Docker image.
+
+The launch target is a composite target that executes the build and run targets in order.
