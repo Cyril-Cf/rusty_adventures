@@ -48,6 +48,18 @@ pub fn render_hud_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
             Span::raw("Health: "),
             Span::styled(state.player.health_points.to_string(), Style::new().green()),
         ]),
+        Line::from(vec![
+            Span::raw("Damage: "),
+            Span::styled(
+                state.player.base_damage.start().to_string(),
+                Style::new().green(),
+            ),
+            Span::raw(" - "),
+            Span::styled(
+                state.player.base_damage.end().to_string(),
+                Style::new().green(),
+            ),
+        ]),
     ];
 
     frame.render_widget(

@@ -35,7 +35,8 @@ impl Player {
         self.experience_to_level_up -= experience_gained;
         if self.experience_to_level_up <= 0 {
             self.level += 1;
-            self.health_points = PLAYER_BASE_EXPERIENCE_NECESSARY * 2i32.pow(self.level as u32);
+            self.health_points = PLAYER_BASE_HEALTH_POINT * 2i32.pow(self.level as u32);
+            self.base_damage = 1..=PLAYER_BASE_RANGE_MAX_POINT + self.level as i32;
             if self.experience_to_level_up < 0 {
                 self.experience = self.experience_to_level_up.abs();
                 self.experience_to_level_up =
@@ -49,7 +50,7 @@ impl Player {
         let level = 1;
         Player {
             health_points: PLAYER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
-            base_damage: 1..=PLAYER_BASE_RANGE_MAX_POINT * 2i32.pow(level as u32),
+            base_damage: 1..=PLAYER_BASE_RANGE_MAX_POINT + level as i32,
             name,
             level,
             experience: 0,
