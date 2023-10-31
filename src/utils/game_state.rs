@@ -176,9 +176,9 @@ impl GameState {
             roll_attack(self, false);
             let bool_death_occured = check_for_death(self);
 
-            if bool_death_occured {
+            if bool_death_occured && !self.game_over {
                 self.initiate();
-            } else {
+            } else if !self.game_over {
                 switch_attack_turn(self, false);
                 roll_attack(self, true);
                 let bool_death_occured = check_for_death(self);

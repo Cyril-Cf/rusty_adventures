@@ -1,3 +1,4 @@
+use super::consts::LOOT_TABLE;
 use super::game_state::*;
 use super::monster::*;
 use super::player::*;
@@ -64,9 +65,9 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
         _ => unreachable!(),
     }
     if player_attacked {
-        state.current_monster.receive_damage(damage);
-    } else {
         state.player.receive_damage(damage);
+    } else {
+        state.current_monster.receive_damage(damage);
     };
     state.add_event(GameEvent {
         roll: Some(roll_for_hit.to_string()),
@@ -86,12 +87,20 @@ pub fn check_for_death(state: &mut GameState) -> bool {
         state.game_over = true;
         return true;
     } else if state.current_monster.health_points <= 0 {
+        let mut rng = rand::thread_rng();
+        let index = rng.gen_range(0..LOOT_TABLE.len());
+        let random_crap = LOOT_TABLE[index];
+        state.add_event(GameEvent {
+            roll: None,
+            bool_enemy_turn: None,
+            description: String::from(""),
+        });
         state.add_event(GameEvent {
             roll: None,
             bool_enemy_turn: None,
             description: format!(
-                "Monster has been slain! You receive {} experience points",
-                state.current_monster.experience_given
+                "Monster has been slain! You receive {} experience points and a nice {}.",
+                state.current_monster.experience_given, random_crap
             ),
         });
         let level_before = state.player.level;
@@ -99,6 +108,11 @@ pub fn check_for_death(state: &mut GameState) -> bool {
             .player
             .receive_experience(state.current_monster.experience_given);
         if level_before != state.player.level {
+            state.add_event(GameEvent {
+                roll: None,
+                bool_enemy_turn: None,
+                description: String::from(""),
+            });
             state.add_event(GameEvent {
                 roll: None,
                 bool_enemy_turn: None,
@@ -124,7 +138,7 @@ pub fn switch_attack_turn(state: &mut GameState, give_turn_to_player: bool) {
         state.add_event(GameEvent {
             roll: None,
             bool_enemy_turn: Some(!give_turn_to_player),
-            description: String::from("It's your turn!"),
+            description: String::from("It's your turn! CHARGE!"),
         });
     } else {
         state.player_inputs_accepted = false;
