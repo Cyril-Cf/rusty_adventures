@@ -1,4 +1,5 @@
 use super::consts::*;
+use crate::ui::utils::{FightInfo, FighterInfo};
 use rand::Rng;
 
 pub trait Attack {
@@ -14,6 +15,7 @@ pub struct Player {
     pub level: usize,
     pub name: String,
     pub experience_to_level_up: i32,
+    pub image: String,
 }
 
 impl Attack for Player {
@@ -27,6 +29,21 @@ impl Attack for Player {
     }
     fn get_health_points(&self) -> i32 {
         self.health_points
+    }
+}
+
+impl FightInfo for Player {
+    fn get_fighter_info(&self) -> crate::ui::utils::FighterInfo {
+        FighterInfo {
+            base_damage: self.base_damage.clone(),
+            description: None,
+            experience: Some(self.experience),
+            experience_to_level_up: None,
+            health_points: self.health_points,
+            image: self.image.clone(),
+            level: self.level,
+            name: self.name.clone(),
+        }
     }
 }
 
@@ -48,6 +65,23 @@ impl Player {
     }
     pub fn create_player(name: String) -> Player {
         let level = 1;
+
+        let portrait = r#"
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡠⠤⠖⢒⠂⢤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⢀⣀⠀⠀⠀⠀⠀⢠⠖⠁⠀⠀⠀⠀⠀⠀⠢⣥⣢⠀⠀⠀⠀⠀⣠⣤⠀
+            ⢀⣟⣿⣦⠀⠀⠀⣰⡿⠿⠷⠶⣄⠀⠀⢠⠾⠟⠛⠛⢷⡀⠀⢀⡼⣿⣇⡇
+            ⠈⠛⠛⠿⢕⡂⢴⠁⠀⠀⠀⢀⠈⠆⠠⣮⣴⢤⡀⣀⣸⣗⣶⡧⠒⠉⠉⠁
+            ⠀⠀⠀⠀⠀⢹⠀⠀⠴⣺⣿⣿⠇⠀⠀⠛⡿⣽⣿⣽⠿⠛⢻⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⡌⠀⠀⠈⠉⢩⠀⠀⠀⠀⠀⣸⣒⣄⠀⠀⠀⠀⠇⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⡇⠀⢀⡴⠖⠉⠛⠓⠲⠶⠾⠿⠿⠿⢏⡳⡀⠄⣾⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠃⠀⠞⠀⣀⣀⣀⣀⣀⣀⣀⣤⣤⣶⣿⣇⢧⠀⣿⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⡄⠀⠀⠀⠈⠫⢽⣽⣉⣹⣁⣧⣿⠟⣱⣿⣾⢀⣿⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⢃⠀⠀⠀⠀⠀⠀⠉⠙⠩⠤⠭⣶⣋⡟⢸⢁⣿⠏⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠱⡀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⠝⡇⣘⡾⠋⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠈⠢⣀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣷⠋⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠑⠠⠤⠤⠤⠤⠾⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀
+        "#;
+
         Player {
             health_points: PLAYER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
             base_damage: 1..=PLAYER_BASE_RANGE_MAX_POINT + level as i32,
@@ -55,6 +89,7 @@ impl Player {
             level,
             experience: 0,
             experience_to_level_up: PLAYER_BASE_EXPERIENCE_NECESSARY * 2i32.pow(level as u32),
+            image: portrait.to_string(),
         }
     }
 }

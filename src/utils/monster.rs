@@ -1,3 +1,5 @@
+use crate::ui::utils::{FightInfo, FighterInfo};
+
 use super::consts::*;
 use super::game_state::*;
 use super::player::*;
@@ -25,6 +27,21 @@ impl Attack for Monster {
     fn get_health_points(&self) -> i32 {
         self.health_points
     }
+}
+
+impl FightInfo for Monster {
+  fn get_fighter_info(&self) -> crate::ui::utils::FighterInfo {
+      FighterInfo {
+        base_damage: self.base_damage.clone(),
+        description: Some(self.description.clone()),
+        experience : None,
+        experience_to_level_up : None,
+        health_points: self.health_points,
+        image : self.image.clone(),
+        level : self.level,
+        name : self.name.clone()
+      }
+  }
 }
 
 pub fn get_initial_monster() -> Monster {

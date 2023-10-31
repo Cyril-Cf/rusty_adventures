@@ -1,4 +1,6 @@
-use crate::GameState;
+use super::fighter_ui::render_fighter_ui;
+use super::utils::centered_rect;
+use crate::{ui::utils::FightInfo, GameState};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     prelude::*,
@@ -12,82 +14,41 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
 
     frame.render_widget(
         Block::default().borders(Borders::ALL).title(FIGHTS_BAR),
-        area,
+        area.inner(&Margin {
+            horizontal: 2,
+            vertical: 2,
+        }),
     );
 
     let inner_fight_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(85), Constraint::Percentage(15)])
         .margin(1)
-        .split(area);
+        .split(area.inner(&Margin {
+            horizontal: 2,
+            vertical: 2,
+        }));
 
-    // TOP PART
-    let monster_layout = Layout::default()
+    let fighters_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(inner_fight_layout[0]);
 
-    let stats = vec![
-        Line::from(vec![
-            Span::raw("Name: "),
-            Span::styled(&state.current_monster.name, Style::new()),
-        ]),
-        Line::from(vec![
-            Span::raw("Level: "),
-            Span::styled(
-                state.current_monster.level.to_string(),
-                Style::new().green(),
-            ),
-        ]),
-        Line::from(vec![
-            Span::raw("Health: "),
-            Span::styled(
-                state.current_monster.health_points.to_string(),
-                Style::new().green(),
-            ),
-        ]),
-        Line::from(vec![
-            Span::raw("Damage: "),
-            Span::styled(
-                state.current_monster.base_damage.start().to_string(),
-                Style::new().green(),
-            ),
-            Span::raw(" - "),
-            Span::styled(
-                state.current_monster.base_damage.end().to_string(),
-                Style::new().green(),
-            ),
-        ]),
-        Line::from(vec![
-            Span::raw("Description: "),
-            Span::styled(&state.current_monster.description, Style::new()),
-        ]),
-    ];
-
-    frame.render_widget(
-        Paragraph::new(stats)
-            .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true })
-            .block(Block::default().borders(Borders::ALL).padding(Padding {
-                left: 1,
-                right: 1,
-                top: 1,
-                bottom: 1,
-            })),
-        monster_layout[0].inner(&Margin {
-            vertical: 2,
-            horizontal: 2,
+    render_fighter_ui(
+        frame,
+        fighters_layout[0].inner(&Margin {
+            horizontal: 1,
+            vertical: 1,
         }),
+        state.player.get_fighter_info(),
     );
-
-    frame.render_widget(
-        Paragraph::new(state.current_monster.image.clone())
-            .alignment(Alignment::Center)
-            .block(Block::default().borders(Borders::ALL)),
-        monster_layout[1].inner(&Margin {
-            vertical: 2,
-            horizontal: 2,
+    render_fighter_ui(
+        frame,
+        fighters_layout[1].inner(&Margin {
+            horizontal: 1,
+            vertical: 1,
         }),
+        state.current_monster.get_fighter_info(),
     );
 
     // BOTTOM PART
@@ -99,7 +60,10 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
             Constraint::Percentage(15),
             Constraint::Percentage(15),
         ])
-        .split(inner_fight_layout[1]);
+        .split(inner_fight_layout[1].inner(&Margin {
+            vertical: 0,
+            horizontal: 2,
+        }));
 
     let texts_case = [
         ("Attack", Color::Red, 1),
@@ -117,11 +81,16 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
                 Color::White
             }));
 
+        frame.render_widget(Paragraph::new("").block(block), buttons_layout[index + 1]);
+
         let text_case_button = Paragraph::new(button.0)
-            .block(block)
+            .block(Block::new())
             .alignment(Alignment::Center)
             .style(Style::default().fg(button.1));
 
-        frame.render_widget(text_case_button, buttons_layout[index + 1]);
+        frame.render_widget(
+            text_case_button,
+            centered_rect(buttons_layout[index + 1], 80, 10),
+        );
     }
 }

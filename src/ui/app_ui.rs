@@ -1,5 +1,5 @@
 use super::fights_ui::*;
-use super::hud_ui::*;
+// use super::hud_ui::*;
 use super::logs_ui::*;
 use crate::GameState;
 use ratatui::{
@@ -12,19 +12,13 @@ use ratatui::{
 pub fn render_app_ui(frame: &mut Frame, state: &mut GameState) {
     let main_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(30),
-            Constraint::Percentage(65),
-            Constraint::Percentage(5),
-        ])
+        .constraints([Constraint::Percentage(95), Constraint::Percentage(5)])
         .split(frame.size());
-
-    render_hud_ui(frame, state, main_layout[0]);
 
     let inner_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
-        .split(main_layout[1]);
+        .split(main_layout[0]);
 
     render_fights_ui(frame, state, inner_layout[0]);
     render_logs_ui(frame, state, inner_layout[1]);
@@ -34,5 +28,5 @@ pub fn render_app_ui(frame: &mut Frame, state: &mut GameState) {
         .block(Block::default().borders(Borders::NONE))
         .alignment(Alignment::Center);
 
-    frame.render_widget(footer, main_layout[2]);
+    frame.render_widget(footer, main_layout[1]);
 }

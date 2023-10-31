@@ -1,4 +1,5 @@
 pub mod app_ui;
+pub mod fighter_ui;
 pub mod fights_ui;
 pub mod game_over_ui;
 pub mod hud_ui;

@@ -5,7 +5,10 @@ pub fn render_logs_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
 
     frame.render_widget(
         Block::default().borders(Borders::ALL).title(HISTORY_BAR),
-        area,
+        area.inner(&Margin {
+            horizontal: 2,
+            vertical: 2,
+        }),
     );
 
     let vertical_scroll = 0;
@@ -19,7 +22,7 @@ pub fn render_logs_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
     )
     .wrap(Wrap { trim: true })
     .scroll((state.scroll_state.current_scroll_line as u16, 0))
-    .block(Block::new().borders(Borders::RIGHT));
+    .block(Block::new());
     let scrollbar = Scrollbar::default()
         .orientation(ScrollbarOrientation::VerticalRight)
         .begin_symbol(Some("↑"))
@@ -31,14 +34,14 @@ pub fn render_logs_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
         paragraph,
         area.inner(&Margin {
             vertical: 2,
-            horizontal: 2,
+            horizontal: 4,
         }),
     );
     frame.render_stateful_widget(
         scrollbar,
         area.inner(&Margin {
-            vertical: 1,
-            horizontal: 1,
+            vertical: 4,
+            horizontal: 3,
         }),
         &mut scrollbar_state,
     );

@@ -54,7 +54,7 @@ pub fn render_game_over_ui(f: &mut Frame, state: &mut GameState) {
         main_layout[1],
     );
 
-    let central_area = centered_rect(f.size(), 45, 30, 30, 15);
+    let central_area = repositioned_rect(f.size(), 45, 30, 30, 15);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(3), Constraint::Min(1)])
