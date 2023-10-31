@@ -182,9 +182,7 @@ impl GameState {
                 switch_attack_turn(self, false);
                 roll_attack(self, true);
                 let bool_death_occured = check_for_death(self);
-                if bool_death_occured {
-                    self.initiate();
-                } else {
+                if !bool_death_occured {
                     switch_attack_turn(self, true);
                 }
             }

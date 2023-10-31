@@ -123,14 +123,14 @@ pub fn switch_attack_turn(state: &mut GameState, give_turn_to_player: bool) {
         state.player_inputs_accepted = true;
         state.add_event(GameEvent {
             roll: None,
-            bool_enemy_turn: None,
+            bool_enemy_turn: Some(!give_turn_to_player),
             description: String::from("It's your turn!"),
         });
     } else {
         state.player_inputs_accepted = false;
         state.add_event(GameEvent {
             roll: None,
-            bool_enemy_turn: None,
+            bool_enemy_turn: Some(!give_turn_to_player),
             description: String::from("It's the enemy's turn!"),
         });
     }
