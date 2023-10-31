@@ -1,8 +1,7 @@
+use crate::utils::consts::HISTORY_BAR;
 use crate::GameState;
 use ratatui::{prelude::*, widgets::*};
 pub fn render_logs_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
-    const HISTORY_BAR: &str = " Logs ";
-
     frame.render_widget(
         Block::default().borders(Borders::ALL).title(HISTORY_BAR),
         area.inner(&Margin {
@@ -33,8 +32,8 @@ pub fn render_logs_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
     frame.render_widget(
         paragraph,
         area.inner(&Margin {
-            vertical: 2,
-            horizontal: 4,
+            vertical: 4,
+            horizontal: 5,
         }),
     );
     frame.render_stateful_widget(

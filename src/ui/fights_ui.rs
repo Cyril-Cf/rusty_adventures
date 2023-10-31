@@ -1,5 +1,6 @@
 use super::fighter_ui::render_fighter_ui;
 use super::utils::centered_rect;
+use crate::utils::consts::FIGHTS_BAR;
 use crate::{ui::utils::FightInfo, GameState};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
@@ -10,8 +11,6 @@ use ratatui::{
 };
 
 pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
-    const FIGHTS_BAR: &str = " Fights ";
-
     frame.render_widget(
         Block::default().borders(Borders::ALL).title(FIGHTS_BAR),
         area.inner(&Margin {

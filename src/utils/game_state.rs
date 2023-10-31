@@ -2,16 +2,52 @@ use super::fight::*;
 use super::monster::*;
 use super::player::*;
 use crate::ui::menu_ui::InputMode;
-use ratatui::prelude::Line;
+use ratatui::prelude::*;
 
 #[derive(Clone)]
 pub struct GameEvent {
+    pub roll: Option<String>,
     pub description: String,
+    pub bool_enemy_turn: Option<bool>,
 }
 
 impl From<GameEvent> for Line<'_> {
     fn from(event: GameEvent) -> Line<'static> {
-        return Line::from(event.description);
+        let mut spans: Vec<Span> = Vec::new();
+        if let Some(roll) = event.roll {
+            match roll.as_str() {
+                "0" => {}
+                _ => {
+                    spans.push(Span::styled(
+                        "Roll: ",
+                        Style::default().fg(Color::LightYellow),
+                    ));
+                    spans.push(Span::styled(
+                        roll,
+                        Style::default().add_modifier(Modifier::BOLD),
+                    ));
+                    spans.push(Span::raw(". "));
+                }
+            }
+        }
+        let mut style = Style::default();
+        if let Some(bool_enemy_turn) = event.bool_enemy_turn {
+            if bool_enemy_turn {
+                style = style.red();
+            } else {
+                style = style.green();
+            }
+        }
+        spans.push(Span::styled(event.description, style));
+        let mut line = Line::from(spans);
+        if let Some(bool_enemy_turn) = event.bool_enemy_turn {
+            if bool_enemy_turn {
+                line = line.alignment(Alignment::Right);
+            } else {
+                line = line.alignment(Alignment::Left);
+            }
+        }
+        line
     }
 }
 
@@ -71,12 +107,7 @@ impl GameState {
         start_new_battle(self);
         let bool_player_starts = roll_initiative(self);
         if !bool_player_starts {
-            roll_attack(
-                &self.current_monster,
-                &mut self.player,
-                &mut self.events,
-                true,
-            );
+            roll_attack(self, true);
             check_for_death(self);
             switch_attack_turn(self, !bool_player_starts);
         }
@@ -84,8 +115,27 @@ impl GameState {
 
     pub fn add_event(&mut self, event: GameEvent) {
         self.events.push(event);
-        if self.events.len() > 15 {
-            self.scroll_state.current_scroll_line = 15;
+
+        // TRIED TO ADD DELAY TO CHAR INSERT - NOT FUNCTIONAL
+        // self.events.push(GameEvent {
+        //     description: " ".to_owned(),
+        // });
+        // let delay = std::time::Duration::from_millis(1);
+
+        // if let Some(last_event) = self.events.last_mut() {
+        //     let last_description = &mut last_event.description;
+        //     for c in event.description.chars() {
+        //         if let Some(_) = last_description.pop() {
+        //             last_description.push(c);
+        //             last_description.push(' ');
+        //             std::thread::sleep(delay);
+        //         }
+        //     }
+        // }
+
+        // TODO: GET VERTICAL SIZE DYNAMICALLY
+        if self.events.len() > 30 {
+            self.scroll_state.current_scroll_line = self.events.len() as i32 - 30;
         }
     }
 
@@ -123,26 +173,20 @@ impl GameState {
 
     pub fn select_button(&mut self) {
         if self.selected_button == 1 && self.player_inputs_accepted && !self.game_over {
-            roll_attack(
-                &self.player,
-                &mut self.current_monster,
-                &mut self.events,
-                false,
-            );
+            roll_attack(self, false);
             let bool_death_occured = check_for_death(self);
 
             if bool_death_occured {
                 self.initiate();
             } else {
                 switch_attack_turn(self, false);
-                roll_attack(
-                    &self.current_monster,
-                    &mut self.player,
-                    &mut self.events,
-                    true,
-                );
-                check_for_death(self);
-                switch_attack_turn(self, true);
+                roll_attack(self, true);
+                let bool_death_occured = check_for_death(self);
+                if bool_death_occured {
+                    self.initiate();
+                } else {
+                    switch_attack_turn(self, true);
+                }
             }
         }
     }

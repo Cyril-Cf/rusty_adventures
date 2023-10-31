@@ -1,5 +1,4 @@
 use super::fights_ui::*;
-// use super::hud_ui::*;
 use super::logs_ui::*;
 use crate::GameState;
 use ratatui::{
