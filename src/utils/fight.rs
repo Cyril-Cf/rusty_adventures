@@ -66,8 +66,17 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
     }
     if player_attacked {
         state.player.receive_damage(damage);
+        description
+            .push_str(format!(" You have {} HP remaining!", state.player.health_points).as_str());
     } else {
         state.current_monster.receive_damage(damage);
+        description.push_str(
+            format!(
+                " Ennemy has {} HP remaining!",
+                state.current_monster.health_points
+            )
+            .as_str(),
+        );
     };
     state.add_event(GameEvent {
         roll: Some(roll_for_hit.to_string()),
@@ -133,6 +142,11 @@ pub fn check_for_death(state: &mut GameState) -> bool {
 }
 
 pub fn switch_attack_turn(state: &mut GameState, give_turn_to_player: bool) {
+    state.add_event(GameEvent {
+        roll: None,
+        bool_enemy_turn: None,
+        description: String::from(""),
+    });
     if give_turn_to_player {
         state.player_inputs_accepted = true;
         state.add_event(GameEvent {

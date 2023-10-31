@@ -134,8 +134,8 @@ impl GameState {
         // }
 
         // TODO: GET VERTICAL SIZE DYNAMICALLY
-        if self.events.len() > 30 {
-            self.scroll_state.current_scroll_line = self.events.len() as i32 - 30;
+        if self.events.len() > 35 {
+            self.scroll_state.current_scroll_line = self.events.len() as i32 - 35;
         }
     }
 
