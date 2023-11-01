@@ -12,7 +12,9 @@ use ratatui::{
 
 pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
     frame.render_widget(
-        Block::default().borders(Borders::ALL).title(FIGHTS_BAR),
+        Block::default()
+            .borders(Borders::ALL)
+            .title(format!("{} loop: {}", FIGHTS_BAR, state.loop_count)),
         area.inner(&Margin {
             horizontal: 2,
             vertical: 2,

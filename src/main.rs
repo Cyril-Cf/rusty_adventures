@@ -46,19 +46,23 @@ fn run_app(
             return Ok(());
         }
 
+        state.loop_count += 1;
+
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => {
-                    disable_raw_mode()?;
-                    stdout().execute(LeaveAlternateScreen)?;
-                    return Ok(());
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Char('q') => {
+                        disable_raw_mode()?;
+                        stdout().execute(LeaveAlternateScreen)?;
+                        return Ok(());
+                    }
+                    KeyCode::Left => state.move_horizontal(-1),
+                    KeyCode::Right => state.move_horizontal(1),
+                    KeyCode::Up => state.move_vertical(-1),
+                    KeyCode::Down => state.move_vertical(1),
+                    KeyCode::Enter => state.select_button(),
+                    _ => {}
                 }
-                KeyCode::Left => state.move_horizontal(-1),
-                KeyCode::Right => state.move_horizontal(1),
-                KeyCode::Up => state.move_vertical(-1),
-                KeyCode::Down => state.move_vertical(1),
-                KeyCode::Enter => state.select_button(),
-                _ => {}
             }
         }
     }
@@ -72,40 +76,42 @@ fn run_menu(
         terminal.draw(|frame| ui(frame, state))?;
 
         if let Event::Key(key) = event::read()? {
-            match state.player_choice.input_mode {
-                InputMode::Normal => match key.code {
-                    KeyCode::Char('e') => {
-                        state.player_choice.input_mode = InputMode::Editing;
-                    }
-                    KeyCode::Char(' ') => {
-                        if state.player.name != "" {
-                            disable_raw_mode()?;
-                            stdout().execute(LeaveAlternateScreen)?;
-                            return Ok(());
+            if key.kind == KeyEventKind::Press {
+                match state.player_choice.input_mode {
+                    InputMode::Normal => match key.code {
+                        KeyCode::Char('e') => {
+                            state.player_choice.input_mode = InputMode::Editing;
                         }
-                    }
+                        KeyCode::Char(' ') => {
+                            if state.player.name != "" {
+                                disable_raw_mode()?;
+                                stdout().execute(LeaveAlternateScreen)?;
+                                return Ok(());
+                            }
+                        }
+                        _ => {}
+                    },
+                    InputMode::Editing if key.kind == KeyEventKind::Press => match key.code {
+                        KeyCode::Enter => state.submit_name(),
+                        KeyCode::Char(to_insert) => {
+                            state.enter_char(to_insert);
+                        }
+                        KeyCode::Backspace => {
+                            state.delete_char();
+                        }
+                        KeyCode::Left => {
+                            state.move_cursor_left();
+                        }
+                        KeyCode::Right => {
+                            state.move_cursor_right();
+                        }
+                        KeyCode::Esc => {
+                            state.player_choice.input_mode = InputMode::Normal;
+                        }
+                        _ => {}
+                    },
                     _ => {}
-                },
-                InputMode::Editing if key.kind == KeyEventKind::Press => match key.code {
-                    KeyCode::Enter => state.submit_name(),
-                    KeyCode::Char(to_insert) => {
-                        state.enter_char(to_insert);
-                    }
-                    KeyCode::Backspace => {
-                        state.delete_char();
-                    }
-                    KeyCode::Left => {
-                        state.move_cursor_left();
-                    }
-                    KeyCode::Right => {
-                        state.move_cursor_right();
-                    }
-                    KeyCode::Esc => {
-                        state.player_choice.input_mode = InputMode::Normal;
-                    }
-                    _ => {}
-                },
-                _ => {}
+                }
             }
         }
     }
@@ -119,13 +125,15 @@ fn run_game_over(
         terminal.draw(|frame| render_game_over_ui(frame, state))?;
 
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => {
-                    disable_raw_mode()?;
-                    stdout().execute(LeaveAlternateScreen)?;
-                    return Ok(());
+            if key.kind == KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Char('q') => {
+                        disable_raw_mode()?;
+                        stdout().execute(LeaveAlternateScreen)?;
+                        return Ok(());
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }

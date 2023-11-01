@@ -44,6 +44,7 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
     match roll_for_hit {
         0 => {
             description.push_str("Critical miss!");
+            damage = 0;
         }
         1_i32..=19_i32 => {
             let string = if player_attacked {

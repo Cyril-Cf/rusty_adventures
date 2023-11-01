@@ -72,6 +72,7 @@ pub struct GameState {
     pub player_inputs_accepted: bool,
     pub game_over: bool,
     pub player_choice: PlayerChoice,
+    pub loop_count: i32,
 }
 
 impl Default for GameState {
@@ -98,6 +99,7 @@ impl Default for GameState {
                 messages: Vec::new(),
                 cursor_position: 0,
             },
+            loop_count: 1,
         }
     }
 }
