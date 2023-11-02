@@ -1,9 +1,64 @@
-use crate::ui::utils::{FightInfo, FighterInfo};
-
 use super::consts::*;
 use super::game_state::*;
 use super::player::*;
+use crate::ui::utils::{FightInfo, FighterInfo};
 use rand::Rng;
+
+#[derive(Clone)]
+pub enum HealthPotion {
+    SmallPotion,
+    MediumPotion,
+    GiantPotion,
+}
+
+#[derive(Clone)]
+pub enum Item {
+    Potion(HealthPotion),
+}
+
+pub trait ItemDetails {
+    fn get_name(&self) -> String;
+    fn get_description(&self) -> String;
+}
+
+impl ItemDetails for Item {
+    fn get_name(&self) -> String {
+        match self {
+            Item::Potion(potion) => potion.get_name(),
+        }
+    }
+
+    fn get_description(&self) -> String {
+        match self {
+            Item::Potion(potion) => potion.get_description(),
+        }
+    }
+}
+
+impl ItemDetails for HealthPotion {
+    fn get_name(&self) -> String {
+        match self {
+            HealthPotion::SmallPotion => String::from("Small health potion"),
+            HealthPotion::MediumPotion => String::from("Medium health potion"),
+            HealthPotion::GiantPotion => String::from("Giant health potion"),
+        }
+    }
+
+    fn get_description(&self) -> String {
+        match self {
+            HealthPotion::SmallPotion => String::from("Restores 10 HP"),
+            HealthPotion::MediumPotion => String::from("Restores 50 HP"),
+            HealthPotion::GiantPotion => String::from("Restores all HP"),
+        }
+    }
+}
+#[derive(Clone)]
+pub struct Loot {
+    pub level_up: bool,
+    pub item: Option<Item>,
+}
+
+#[derive(Clone)]
 
 pub struct Monster {
     pub name: String,
@@ -13,6 +68,7 @@ pub struct Monster {
     pub description: String,
     pub experience_given: i32,
     pub image: String,
+    pub loot: Loot,
 }
 
 impl Attack for Monster {
@@ -30,25 +86,25 @@ impl Attack for Monster {
 }
 
 impl FightInfo for Monster {
-  fn get_fighter_info(&self) -> crate::ui::utils::FighterInfo {
-      FighterInfo {
-        base_damage: self.base_damage.clone(),
-        description: Some(self.description.clone()),
-        experience : None,
-        experience_to_level_up : None,
-        health_points: self.health_points,
-        image : self.image.clone(),
-        level : self.level,
-        name : self.name.clone()
-      }
-  }
+    fn get_fighter_info(&self) -> crate::ui::utils::FighterInfo {
+        FighterInfo {
+            base_damage: self.base_damage.clone(),
+            description: Some(self.description.clone()),
+            experience: None,
+            experience_to_level_up: None,
+            health_points: self.health_points,
+            image: self.image.clone(),
+            level: self.level,
+            name: self.name.clone(),
+        }
+    }
 }
 
 pub fn get_initial_monster() -> Monster {
     let mut rng = rand::thread_rng();
     let random_index: usize = rng.gen_range(0..MONSTERS.len());
-    let selected_monster = MONSTERS[random_index];
-    let (name, description, image) = selected_monster;
+    let selected_monster = MONSTERS.get(random_index).unwrap();
+    let (name, description, image, loot) = selected_monster;
     let level = 1;
 
     Monster {
@@ -59,14 +115,15 @@ pub fn get_initial_monster() -> Monster {
         experience_given: MONSTER_BASE_EXPERIENCE_GIVEN * 2i32.pow(level as u32),
         health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
         level: level as usize,
+        loot: loot.clone(),
     }
 }
 
 pub fn get_random_monster(state: &mut GameState) -> Monster {
     let mut rng = rand::thread_rng();
     let random_index: usize = rng.gen_range(0..MONSTERS.len());
-    let selected_monster = MONSTERS[random_index];
-    let (name, description, image) = selected_monster;
+    let selected_monster = MONSTERS.get(random_index).unwrap();
+    let (name, description, image, loot) = selected_monster;
     let level = state.player.level;
 
     Monster {
@@ -77,13 +134,14 @@ pub fn get_random_monster(state: &mut GameState) -> Monster {
         experience_given: MONSTER_BASE_EXPERIENCE_GIVEN * 2i32.pow(level as u32),
         health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
         level: level as usize,
+        loot: loot.clone(),
     }
 }
 
-const MONSTERS: [(&str, &str, &str); 15] = [
+const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     (
         "Greta the Fierce",
-        "A fearsome warrior from the northern realms, known for her unmatched strength and courage.",
+        "Une redoutable guerrière des royaumes du nord, connue pour sa force et son courage inégalés.",
         r#"
         w*W*W*W*w
          \"."."/
@@ -93,405 +151,143 @@ const MONSTERS: [(&str, &str, &str); 15] = [
         .-~'='~-.
        /`~`"Y"`~`\
       / /(_ * _)\ \
-     / /  )   (  \ \
-     \ \_/\\_//\_/ / 
-      \/_) '*' (_\/
-        |       |
-        |       |
-        |       |
-        |       |
-        |       |
-        |       |
-        |       |
-        |       |
-        w*W*W*W*w     
-        "#
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::SmallPotion)),
+        },
     ),
     (
-        "Thornback Terror",
-        "A legendary creature with thorny spikes on its back, said to guard ancient treasures.",
+        "Zog the Mischievous",
+        "Un farceur rusé qui aime jouer des tours aux voyageurs égarés.",
         r#"
-        , ,, ,                              
-        | || |    ,/  _____  \.             
-        \_||_/    ||_/     \_||             
-          ||       \_| . . |_/              
-          ||         |  L  |                
-         ,||         |`==='|                
-         |>|      ___`>  -<'___             
-         |>|\    /             \            
-         \>| \  /  ,    .    .  |           
-          ||  \/  /| .  |  . |  |           
-          ||\  ` / | ___|___ |  |     (     
-       (( || `--'  | _______ |  |     ))  ( 
-     (  )\|| (  )\ | - --- - | -| (  ( \  ))
-     (\/  || ))/ ( | -- - -- |  | )) )  \(( 
-      ( ()||((( ())|         |  |( (( () )
-        "#
+        .-^.
+        | o |
+        |   |
+        | o |
+        '---'
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::SmallPotion)),
+        },
     ),
     (
-        "Abyssal Spider",
-        "A monstrous sea spider that lurks in the depths, leaving terror in its wake.",
+        "Spike the Spiky",
+        "Un monstre hérissé de pointes qui adore les câlins (attention, il pique !).",
         r#"
-        ____                      ,
-        /---.'.__             ____//
-             '--.\           /.---'
-        _______  \\         //
-      /.------.\  \|      .'/  ______
-     //  ___  \ \ ||/|\  //  _/_----.\__
-    |/  /.-.\  \ \:|< >|// _/.'..\   '--'
-       //   \'. | \'.|.'/ /_/ /  \\
-      //     \ \_\/" ' ~\-'.-'    \\
-     //       '-._| :H: |'-.__     \\
-    //           (/'==='\)'-._\     ||
-    ||                        \\    \|
-    ||                         \\    '
-    |/                          \\
-                                 ||
-                                 ||
-                                 \\
-        "#
+          /-.-\
+        /  /  /\
+        |o   o|
+        \  ^  /  
+          \ /    
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::SmallPotion)),
+        },
     ),
     (
-        "Blazing Phoenix",
-        "A magnificent bird of flames, symbolizing rebirth and renewal.",
+        "Mystica the Enigmatic",
+        "Une créature mystérieuse qui parle en énigmes et accorde des souhaits.",
         r#"
-        //.---.    .-'.
-        ( (-/==^==.  /    ) ))
-          /|))è é()./   .'
-         ('-((\_/( ))..' /
-          \ '-;_.-. ) ))
-           '-(_ _)_\ ) )).'
-            / ) (/_ ) \
-        (( ( /\_/\,/|  ) ))
-            /  .  '.'.' 
-           (  .\  . '.___.
-            \_| \  '.___/
-             \'._;.___) 
-              \_|-.\ |
-               '--,-\'.
-                  |/ \ )
-                ._/   \|_
-                       \ )
-                        \|
-                       ._)
-        "#
+        .-^-.
+        |? ?|
+        | * |
+        |   |
+        '-.-'
+        "#,
+        Loot {
+            level_up: false,
+            item: None,
+        },
     ),
     (
-        "Shadowmaw Reaper",
-        "A mysterious reaper of souls that dwells in the shadows, collecting lost spirits.",
+        "Fluffy the Fluffball",
+        "Une boule de poils géante avec un appétit insatiable pour les friandises.",
         r#"
-                                                   .""--.._
-                                           []      `'--.._
-                                           ||__           `'-,
-                                         `)||_ ```'--..       \
-                     _                    /|//}        ``--._  |
-                  .'` `'.                /////}              `\/
-                 /  .""".\              //{///    
-                /  /_  _`\\            // `||
-                | |(_)(_)||          _//   ||
-                | |  /\  )|        _///\   ||
-                | |L====J |       / |/ |   ||
-               /  /'-..-' /    .'`  \  |   ||
-              /   |  :: | |_.-`      |  \  ||
-             /|   `\-::.| |          \   | ||
-           /` `|   /    | |          |   / ||
-         |`    \   |    / /          \  |  ||
-        |       `\_|    |/      ,.__. \ |  ||
-        /                     /`    `\ ||  ||
-       |           .         /        \||  ||
-       |                     |         |/  ||
-       /         /           |         (   ||
-      /          .           /          )  ||
-     |            \          |             ||
-    /             |          /             ||
-   |\            /          |              ||
-   \ `-._       |           /              ||
-    \ ,//`\    /`           |              ||
-     ///\  \  |             \              ||
-    |||| ) |__/             |              ||
-    |||| `.(                |              ||
-    `\\` /`                 /              ||
-       /`                   /              ||
-      /                     |              ||
-     |                      \              ||
-    /                        |             ||
-  /`                          \            ||
-/`                            |            ||
-`-.___,-.      .-.        ___,'            ||
-         `---'`   `'----'`
-        "#
+         /^\
+        /   \
+        |o o|
+        \ ^ /
+         \_/
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::MediumPotion)),
+        },
     ),
     (
-        "Frostbite Yeti",
-        "A giant yeti covered in ice, dwelling in the frosty mountains of the north.",
+        "Squeaky the Noisy",
+        "Un monstre qui émet des bruits étranges et déroutants à tout moment.",
         r#"
-                         _,--~~~,
-                       .'        `.
-                       |           ;
-                       |           :
-                      /_,-==/     .'
-                    /'`\*  ;      :      
-                  :'    `-        :      
-                  `~*,'     .     :      
-                     :__.,._  `;  :      
-                     `\'    )  '  `,     
-                         \-/  '     )     
-                         :'          \ _
-                          `~---,-~    `,)
-          ___                   \     /~`\
-    \---__ `;~~~-------------~~~(| _-'    `,
-  ---, ' \`-._____     _______.---'         \
- \--- `~~-`,      ~~~~~~                     `,
-\----      )                                   \
-\----.  __ /                                    `-
- \----'` -~____  
-               ~~~~~--------,.___     
-                                 ```\_
-        "#
+         .---.
+        /o o o\
+        |  ~  |
+        \ - - /
+         '---'    
+        "#,
+        Loot {
+            level_up: false,
+            item: None
+        },
     ),
     (
-        "Ironclad Goliath",
-        "A colossal golem made of iron, a guardian of hidden treasures.",
+        "Glimmer the Shiny",
+        "Une créature brillante qui attire l'attention avec son éclat éblouissant.",
         r#"
-                         /[-])//  ___
-                    __ --\ `_/~--|  / \ 
-                  /_-/~~--~~ /~~~\\_\ /\
-                  |  |___|===|_-- | \ \ \
-_/~~~~~~~~|~~\,   ---|---\___/----|  \/\-\
-~\________|__/   / // \__ |  ||  / | |   | |
-         ,~-|~~~~~\--, | \|--|/~|||  |   | | 
-         [3-|____---~~ _--'==;/ _,   |   |_|
-                     /   /\__|_/  \  \__/--/ 
-                    /---/_\  -___/ |  /,--| 
-                    /  /\/~--|   | |  \///
-                   /  / |-__ \    |/
-                  |--/ /      |-- | \  
-                 \^~~\\/\      \   \/- _
-                  \    |  \     |~~\~~| \ 
-                   \    \  \     \   \  | \
-                     \    \ |     \   \    \
-                      |~~|\/\|     \   \   |
-                     |   |/         \_--_- |\
-                     |  /            /   |/\/
-                      ~~             /  /   
-                                    |__/           
-        "#
+          /\
+         /o\
+        | * |
+         \/
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::SmallPotion)),
+        },
     ),
     (
-        "Wispwood Enchanter",
-        "An enchanting spirit of the wispwood forest, protector of its magical secrets.",
+        "Sandy the Sandman",
+        "Un gardien des rêves qui peut vous faire vivre vos rêves les plus fous.",
         r#"
-        .-----.
-        \ ' /   _/    )/
-       - ( ) -('---''--)
-        / . \((()\^_^/)()
-         \\_\ (()_)-((()()
-          '- \ )/\._./(()
-            '/\/( X   ) \
-            (___)|___/ ) \
-                 |.#_|(___)
-                /\    \ ( (_
-                \/\/\/\) \\
-                | / \ |
-                |(   \|
-               _|_)__|_\_
-               )...()...(
-                | (   \ |     
-             .-'__,)  (  \
-                       '\_-,
-        "#
+          .-.  
+         /o o\
+        |  *  |
+         \ - / 
+          '-'
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::SmallPotion)),
+        },
     ),
     (
-        "Thunderhoof Minotaur",
-        "A Minotaur with thunderous hooves, challenging all who enter its labyrinth.",
+        "Whiskers the Whiskered",
+        "Un félin géant avec de longues moustaches qui prévoit la météo.",
         r#"
-        .      .
-        |\____/|
-       (\|----|/)
-        \ 0  0 /
-         |    |
-      ___/\../\____
-     /     --       \
-    /  \         /   \
-   |    \___/___/(   |
-   \   /|  }{   | \  )
-    \  ||__}{__|  |  |
-     \  |;;;;;;;\  \ / \_______
-      \ /;;;;;;;;| [,,[|======'
-        |;;;;;;/ |     /
-        ||;;|\   |
-        ||;;/|   /
-        \_|:||__|
-         \ ;||  /
-         |= || =|
-         |= /\ =|
-         /_/  \_\
-        "#
+        /\_/\ 
+       | ^ ^ |
+        \ * / 
+         \_/   
+        "#,
+        Loot {
+            level_up: false,
+            item: None,
+        },
     ),
     (
-        "Duskwing Harpy",
-        "A harpy with wings as dark as the night, a skilled hunter in the moonlight.",
+        "Gloop the Gooey",
+        "Une créature gluante qui peut se transformer en n'importe quoi.",
         r#"
-        ,                                      ,
-        |\                                      /|
-     ,   \'._ ,                           ,  _.'/   ,
-     |\  {'. '-`\,      ,-._**_.-,      ,/`-' .'}  /|
-      \`'-'-.  '.`\      \*____*/      /`.'  .-'-'`/
-    ,'-'-._  '.  ) )     /`    `\     ( (  .'  _.-'-',
-    |\'- _ '.   , /     /  /""\  \     \ ,  .'  _ -'/|
-     \'-.   .  ; (      \_|^  ^|_/      ) ;   .  .-'/
-      `'--, . ;  {`-.      \__/      .-'}  ; . ,--'`
-      '--`_. ;  { ^  \    _|  |_    /  ^ }  ; ._`--'
-      `,_.--  ;  { ^  `-'`      `'-`  ^ }  ;  --._,`
-        ,_.-    ; {^    /        \    ^} ;    -._, 
-         ,_.-`), /\{^,/\\_'_/\_'_//\,^}/\ ,(`-._,
-           _.'.-` /.'   \        /   `.\ `-.'._
-          `  _.' `       \      /       ` '._   `
-                        .-'.  .'-.
-                      .'    `` ^  '.
-                     /  ^ ^   ^  ^  \
-                     | ^    ^   ^   |
-                    /^   ^/    \  ^  \
-                    \,_^_/    ^ \_,^./
-                     /=/  \^   /  \=\
-                 __ /=/_   | ^|   _\=\ __
-               <(=,'=(==,) |  | (,==)=',=)>
-                 /_/|_\    /  \    /_|\_\
-                 `V (=|  .'    '.  |=) V`
-                     V  / _/  \_ \  V
-                       `"` \  / `"`
-                            \(
-        "#
-    ),
-    (
-        "Venomspine Basilisk",
-        "A basilisk with venomous spines, said to turn its prey into stone with a single glance.",
-        r#"                             
-        ___,---.__          /'|`\          __,---,___          
-     ,-'    \`    `-.____,-'  |  `-.____,-'    //    `-.       
-   ,'        |           ~'\     /`~           |        `.      
-  /      ___//              `. ,'          ,  , \___      \    
- |    ,-'   `-.__   _         |        ,    __,-'   `-.    |    
- |   /          /\_  `   .    |    ,      _/\          \   |   
- \  |           \ \`-.___ \   |   / ___,-'/ /           |  /  
-  \  \           | `._   `\\  |  //'   _,' |           /  /      
-   `-.\         /'  _ `---'' , . ``---' _  `\         /,-'     
-      ``       /     \    ,='/ \`=.    /     \       ''          
-              |__   /|\_,--.,-.--,--._/|\   __|                  
-              /  `./  \\`\ |  |  | /,//' \,'  \                  
-             /   /     ||--+--|--+-/-|     \   \                 
-            |   |     /'\_\_\ | /_/_/`\     |   |                
-             \   \__, \_     `~'     _/ .__/   /            
-              `-._,-'   `-._______,-'   `-._,-'
-        "#
-    ),
-    (
-        "Stardust Dragon",
-        "A celestial dragon from the starry skies, guarding ancient constellations.",
-        r#"
-                 ___====-_  _-====___
-           _--^^^#####//      \\#####^^^--_
-        _-^##########// (    ) \\##########^-_
-       -############//  |\^^/|  \\############-
-     _/############//   (@::@)   \\############\_
-    /#############((     \\//     ))#############\
-   -###############\\    (oo)    //###############-
-  -#################\\  / VV \  //#################-
- -###################\\/      \//###################-
-_#/|##########/\######(   /\   )######/\##########|\#_
-|/ |#/\#/\#/\/  \#/\##\  |  |  /##/\#/  \/\#/\#/\#| \|
-`  |/  V  V  `   V  \#\| |  | |/#/  V   '  V  V  \|  '
-   `   `  `      `   / | |  | | \   '      '  '   '
-                    (  | |  | |  )
-                   __\ | |  | | /__
-                  (vvv(VVV)(VVV)vvv)
-        "#
-    ),
-    (
-        "Molten Core Elemental",
-        "An elemental creature born of molten lava, capable of burning everything in its path.",
-        r#"
-                                                     ,--,  ,.-.
-               ,                   \,       '-,-`,'-.' | ._
-              /|           \    ,   |\         }  )/  / `-,',
-              [ ,          |\  /|   | |        /  \|  |/`  ,`
-              | |       ,.`  `,` `, | |  _,...(   (      .',
-              \  \  __ ,-` `  ,  , `/ |,'      Y     (   /_L\
-               \  \_\,``,   ` , ,  /  |         )         _,/
-                \  '  `  ,_ _`_,-,<._.<        /         /
-                 ', `>.,`  `  `   ,., |_      |         /
-                   \/`  `,   `   ,`  | /__,.-`    _,   `\
-               -,-..\  _  \  `  /  ,  / `._) _,-\`       \
-                \_,,.) /\    ` /  / ) (-,, ``    ,        |
-               ,` )  | \_\       '-`  |  `(               \
-              /  /```(   , --, ,' \   |`<`    ,            |
-             /  /_,--`\   <\  V /> ,` )<_/)  | \      _____)
-       ,-, ,`   `   (_,\ \    |   /) / __/  /   `----`
-      (-, \           ) \ ('_.-._)/ /,`    /
-      | /  `          `/ \\ V   V, /`     /
-   ,--\(        ,     <_/`\\     ||      /
-  (   ,``-     \/|         \-A.A-`|     /
- ,>,_ )_,..(    )\          -,,_-`  _--`
-(_ \|`   _,/_  /  \_            ,--`
- \( `   <.,../`     `-.._   _,-`
-        "#
-    ),
-    (
-        "Moonshadow Assassin",
-        "An elusive assassin who moves like a shadow in the moonlit night.",
-        r#"
-        -. -. `.  / .-' _.'  _
-        .--`. `. `| / __.-- _' `
-       '.-.  \  \ |  /   _.' `_
-       .-. \  `  || |  .' _.-' `.
-     .' _ \ '  -    -'  - ` _.-.
-      .' `. %%%%%   | %%%%% _.-.`-
-    .' .-. ><(@)> ) ( <(@)>< .-.`.
-      (("`(   -   | |   -   )'"))
-     / \\#)\    (.(_).)    /(#//\
-    ' / ) ((  /   | |   \  )) (`.`.
-    .'  (.) \ .md88o88bm. / (.) \)
-      / /| / \ `Y88888Y' / \ | \ \
-    .' / O  / `.   -   .' \  O \ \\
-     / /(O)/ /| `.___.' | \\(O) \
-      / / / / |  |   |  |\  \  \ \
-      / / // /|  |   |  |  \  \ \  
-    _.--/--/'( ) ) ( ) ) )`\-\-\-._
-   ( ( ( ) ( ) ) ( ) ) ( ) ) ) ( ) )
-        "#
-    ),
-    (
-        "Crystalwing Pegasus",
-        "A graceful Pegasus with crystal wings, a symbol of purity and grace.",
-        r#"
-        \ __
-        --==/////////////[})))==*
-                         / \ '          ,|
-                            `\`\      //|                             ,|
-                              \ `\  //,/'                           -~ |
-           )             _-~~~\  |/ / |'|                       _-~  / ,
-          ((            /' )   | \ / /'/                    _-~   _/_-~|
-         (((            ;  /`  ' )/ /''                 _ -~     _-~ ,/'
-         ) ))           `~~\   `\\/'/|'           __--~~__--\ _-~  _/, 
-        ((( ))            / ~~    \ /~      __--~~  --~~  __/~  _-~ /
-         ((\~\           |    )   | '      /        __--~~  \-~~ _-~
-            `\(\    __--(   _/    |'\     /     --~~   __--~' _-~ ~|
-             (  ((~~   __-~        \~\   /     ___---~~  ~~\~~__--~ 
-              ~~\~~~~~~   `\-~      \~\ /           __--~~~'~~/
-                           ;\ __.-~  ~-/      ~~~~~__\__---~~ _..--._
-                           ;;;;;;;;'  /      ---~~~/_.-----.-~  _.._ ~\     
-                          ;;;;;;;'   /      ----~~/         `\,~    `\ \        
-                          ;;;;'     (      ---~~/         `:::|       `\\.      
-                          |'  _      `----~~~~'      /      `:|        ()))),      
-                    ______/\/~    |                 /        /         (((((())  
-                  /~;;.____/;;'  /          ___.---(   `;;;/             )))'`))
-                 / //  _;______;'------~~~~~    |;;/\    /                ((   ( 
-                //  \ \                        /  |  \;;,\                 `   
-               (<_    \ \                    /',/-----'  _> 
-                \_|     \\_                 //~;~~~~~~~~~ 
-                         \_|               (,~~   
-                                            \~\
-                                             ~~
-        "#
+        .---.
+        |* *|
+        | * |
+        | * |
+        '---'
+        "#,
+        Loot {
+            level_up: false,
+            item: Some(Item::Potion(HealthPotion::GiantPotion)),
+        },
     ),
 ];

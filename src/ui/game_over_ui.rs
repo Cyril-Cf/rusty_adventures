@@ -21,6 +21,9 @@ pub fn render_game_over_ui(f: &mut Frame, state: &mut GameState) {
   | | \ \| |__| |____) |  | |     | |    | |__| | |__| | |\  | |__| | |___| |__| | |\  |
   |_|  \_\\____/|_____/   |_|     |_|    |_____/ \____/|_| \_|\_____|______\____/|_| \_|
 
+
+
+
                            ,--.
                           {    }
                           K,   }
@@ -86,5 +89,6 @@ pub fn render_game_over_ui(f: &mut Frame, state: &mut GameState) {
             bottom: 2,
         }),
     );
+    f.render_widget(Clear, chunks[1]);
     f.render_widget(content, chunks[1]);
 }

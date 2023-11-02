@@ -46,8 +46,6 @@ fn run_app(
             return Ok(());
         }
 
-        state.loop_count += 1;
-
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
                 match key.code {

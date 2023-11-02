@@ -1,6 +1,7 @@
 use super::fight::*;
 use super::monster::*;
 use super::player::*;
+use crate::ui::consts::{FIGHT_UI_BUTTONS, INVENTORY_UI_BUTTONS, MONSTER_SLAYED_UI_BUTTONS};
 use crate::ui::menu_ui::InputMode;
 use ratatui::prelude::*;
 
@@ -62,6 +63,97 @@ pub struct PlayerChoice {
     pub messages: Vec<String>,
 }
 
+#[derive(Copy, Clone)]
+pub enum ControlType {
+    FightControls(FightButtons),
+    MonsterSlayedControls(MonsterSlayedButtons),
+    InventoryControls(InventoryButtons),
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum InventoryButtons {
+    Use,
+    Cancel,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum MonsterSlayedButtons {
+    Continue,
+    Skip,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum FightButtons {
+    Attack,
+    Inventory,
+    Spell,
+    Flee,
+}
+
+trait IncrementDecrement {
+    fn increment_horizontal(&self, current: usize) -> Self;
+    fn decrement_horizontal(&self, current: usize) -> Self;
+}
+
+impl IncrementDecrement for ControlType {
+    fn increment_horizontal(&self, current: usize) -> Self {
+        match self {
+            ControlType::FightControls(_) => {
+                if let Some(button) = FIGHT_UI_BUTTONS.get(current + 1) {
+                    return ControlType::FightControls(button.2);
+                };
+                *self
+            }
+            ControlType::MonsterSlayedControls(_) => {
+                if let Some(button) = MONSTER_SLAYED_UI_BUTTONS.get(current + 1) {
+                    return ControlType::MonsterSlayedControls(button.2);
+                };
+                *self
+            }
+            ControlType::InventoryControls(_) => {
+                if let Some(button) = INVENTORY_UI_BUTTONS.get(current + 1) {
+                    return ControlType::InventoryControls(button.2);
+                };
+                *self
+            }
+        }
+    }
+
+    fn decrement_horizontal(&self, current: usize) -> Self {
+        match self {
+            ControlType::FightControls(_) => {
+                if current > 0 {
+                    if let Some(button) = FIGHT_UI_BUTTONS.get(current - 1) {
+                        return ControlType::FightControls(button.2);
+                    };
+                }
+                *self
+            }
+            ControlType::MonsterSlayedControls(_) => {
+                if current > 0 {
+                    if let Some(button) = MONSTER_SLAYED_UI_BUTTONS.get(current - 1) {
+                        return ControlType::MonsterSlayedControls(button.2);
+                    };
+                }
+                *self
+            }
+            ControlType::InventoryControls(_) => {
+                if current > 0 {
+                    if let Some(button) = INVENTORY_UI_BUTTONS.get(current - 1) {
+                        return ControlType::InventoryControls(button.2);
+                    };
+                }
+                *self
+            }
+        }
+    }
+}
+
+pub enum PopupType {
+    MonsterSlayed,
+    Inventory,
+}
+
 pub struct GameState {
     pub selected_button: usize,
     pub player: Player,
@@ -72,7 +164,8 @@ pub struct GameState {
     pub player_inputs_accepted: bool,
     pub game_over: bool,
     pub player_choice: PlayerChoice,
-    pub loop_count: i32,
+    pub popup_type: Option<PopupType>,
+    pub controls_type: ControlType,
 }
 
 impl Default for GameState {
@@ -99,12 +192,15 @@ impl Default for GameState {
                 messages: Vec::new(),
                 cursor_position: 0,
             },
-            loop_count: 1,
+            popup_type: None,
+            controls_type: ControlType::FightControls(FightButtons::Attack),
         }
     }
 }
 
 impl GameState {
+    // GAME
+
     pub fn initiate(&mut self) {
         start_new_battle(self);
         let bool_player_starts = roll_initiative(self);
@@ -117,79 +213,130 @@ impl GameState {
 
     pub fn add_event(&mut self, event: GameEvent) {
         self.events.push(event);
-
-        // TRIED TO ADD DELAY TO CHAR INSERT - NOT FUNCTIONAL
-        // self.events.push(GameEvent {
-        //     description: " ".to_owned(),
-        // });
-        // let delay = std::time::Duration::from_millis(1);
-
-        // if let Some(last_event) = self.events.last_mut() {
-        //     let last_description = &mut last_event.description;
-        //     for c in event.description.chars() {
-        //         if let Some(_) = last_description.pop() {
-        //             last_description.push(c);
-        //             last_description.push(' ');
-        //             std::thread::sleep(delay);
-        //         }
-        //     }
-        // }
-
-        // TODO: GET VERTICAL SIZE DYNAMICALLY
-        if self.events.len() > 35 {
-            self.scroll_state.current_scroll_line = self.events.len() as i32 - 35;
+        if self.events.len() > 30 {
+            self.scroll_state.current_scroll_line = self.events.len() as i32 - 30;
         }
     }
 
     pub fn move_horizontal(&mut self, value: i32) {
-        match value {
-            -1 => {
-                if self.selected_button != 1 {
-                    self.selected_button -= 1;
-                }
+        match &self.controls_type {
+            ControlType::FightControls(button_selected) => {
+                if let Some(current_index) = FIGHT_UI_BUTTONS
+                    .iter()
+                    .position(|&(_, _, b)| b == *button_selected)
+                {
+                    match value {
+                        -1 => {
+                            self.controls_type =
+                                self.controls_type.decrement_horizontal(current_index);
+                        }
+                        1 => {
+                            self.controls_type =
+                                self.controls_type.increment_horizontal(current_index);
+                        }
+                        _ => panic!("Value must be -1 or 1"),
+                    }
+                };
             }
-            1 => {
-                if self.selected_button != 3 {
-                    self.selected_button += 1;
-                }
+            ControlType::MonsterSlayedControls(button_selected) => {
+                if let Some(current_index) = MONSTER_SLAYED_UI_BUTTONS
+                    .iter()
+                    .position(|&(_, _, b)| b == *button_selected)
+                {
+                    match value {
+                        -1 => {
+                            self.controls_type =
+                                self.controls_type.decrement_horizontal(current_index);
+                        }
+                        1 => {
+                            self.controls_type =
+                                self.controls_type.increment_horizontal(current_index);
+                        }
+                        _ => panic!("Value must be -1 or 1"),
+                    }
+                };
             }
-            _ => panic!("Value must be -1 or 1"),
+            ControlType::InventoryControls(button_selected) => {
+                if let Some(current_index) = INVENTORY_UI_BUTTONS
+                    .iter()
+                    .position(|&(_, _, b)| b == *button_selected)
+                {
+                    match value {
+                        -1 => {
+                            self.controls_type =
+                                self.controls_type.decrement_horizontal(current_index);
+                        }
+                        1 => {
+                            self.controls_type =
+                                self.controls_type.increment_horizontal(current_index);
+                        }
+                        _ => panic!("Value must be -1 or 1"),
+                    }
+                };
+            }
         }
     }
 
     pub fn move_vertical(&mut self, value: i32) {
-        match value {
-            -1 => {
-                if self.scroll_state.current_scroll_line != 0 {
-                    self.scroll_state.current_scroll_line -= 1;
+        match self.controls_type {
+            ControlType::FightControls(_) => match value {
+                -1 => {
+                    if self.scroll_state.current_scroll_line != 0 {
+                        self.scroll_state.current_scroll_line -= 1;
+                    }
                 }
-            }
-            1 => {
-                if self.scroll_state.current_scroll_line != self.events.len() as i32 {
-                    self.scroll_state.current_scroll_line += 1;
+                1 => {
+                    if self.scroll_state.current_scroll_line != self.events.len() as i32 {
+                        self.scroll_state.current_scroll_line += 1;
+                    }
                 }
-            }
-            _ => panic!("Value must be -1 or 1"),
+                _ => panic!("Value must be -1 or 1"),
+            },
+            _ => {}
         }
     }
 
     pub fn select_button(&mut self) {
-        if self.selected_button == 1 && self.player_inputs_accepted && !self.game_over {
-            roll_attack(self, false);
-            let bool_death_occured = check_for_death(self);
+        match &self.controls_type {
+            ControlType::FightControls(selected_button) => match selected_button {
+                FightButtons::Attack => {
+                    if self.player_inputs_accepted && !self.game_over {
+                        roll_attack(self, false);
+                        check_for_death(self);
 
-            if bool_death_occured && !self.game_over {
-                self.initiate();
-            } else if !self.game_over {
-                switch_attack_turn(self, false);
-                roll_attack(self, true);
-                let bool_death_occured = check_for_death(self);
-                if !bool_death_occured {
-                    switch_attack_turn(self, true);
+                        if !self.game_over {
+                            switch_attack_turn(self, false);
+                            roll_attack(self, true);
+                            let bool_death_occured = check_for_death(self);
+                            if !bool_death_occured {
+                                switch_attack_turn(self, true);
+                            }
+                        }
+                    }
+                }
+                FightButtons::Inventory => {
+                    self.controls_type = ControlType::InventoryControls(InventoryButtons::Cancel);
+                    self.popup_type = Some(PopupType::Inventory);
+                }
+                _ => {}
+            },
+            ControlType::MonsterSlayedControls(selected_button) => {
+                if selected_button == &MonsterSlayedButtons::Continue {
+                    self.controls_type = ControlType::FightControls(FightButtons::Attack);
+                    self.popup_type = None;
+                    self.initiate();
+                }
+            }
+            ControlType::InventoryControls(selected_button) => {
+                if selected_button == &InventoryButtons::Cancel {
+                    self.controls_type = ControlType::FightControls(FightButtons::Attack);
+                    self.popup_type = None;
                 }
             }
         }
     }
+
+    // MENU
 
     pub fn move_cursor_left(&mut self) {
         let cursor_moved_left = self.player_choice.cursor_position.saturating_sub(1);

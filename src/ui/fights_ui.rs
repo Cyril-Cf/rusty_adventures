@@ -1,6 +1,10 @@
+use super::consts::*;
 use super::fighter_ui::render_fighter_ui;
+use super::popup::inventory_popup_ui::render_inventory_popup;
+use super::popup::monster_slayed_popup_ui::render_monster_slayed_popup;
 use super::utils::centered_rect;
-use crate::utils::consts::FIGHTS_BAR;
+use crate::utils::consts::*;
+use crate::utils::game_state::{ControlType, PopupType};
 use crate::{ui::utils::FightInfo, GameState};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
@@ -12,9 +16,7 @@ use ratatui::{
 
 pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
     frame.render_widget(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(format!("{} loop: {}", FIGHTS_BAR, state.loop_count)),
+        Block::default().borders(Borders::ALL).title(FIGHTS_BAR),
         area.inner(&Margin {
             horizontal: 2,
             vertical: 2,
@@ -56,31 +58,33 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
     let buttons_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(55),
-            Constraint::Percentage(15),
-            Constraint::Percentage(15),
-            Constraint::Percentage(15),
+            Constraint::Length(40),
+            Constraint::Length(10),
+            Constraint::Length(10),
+            Constraint::Length(10),
+            Constraint::Length(10),
+            Constraint::Length(20),
         ])
         .split(inner_fight_layout[1].inner(&Margin {
             vertical: 0,
             horizontal: 2,
         }));
 
-    let texts_case = [
-        ("Attack", Color::Red, 1),
-        ("Seduce", Color::LightRed, 2),
-        ("Flee", Color::LightYellow, 3),
-    ];
-
-    for (index, button) in texts_case.iter().enumerate() {
+    for (index, button) in FIGHT_UI_BUTTONS.iter().enumerate() {
+        let color = match &state.controls_type {
+            ControlType::FightControls(button_selected) => {
+                if button_selected == &button.2 {
+                    button.1
+                } else {
+                    Color::White
+                }
+            }
+            _ => Color::White,
+        };
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(if state.selected_button == button.2 {
-                button.1
-            } else {
-                Color::White
-            }));
+            .border_style(Style::default().fg(color));
 
         frame.render_widget(Paragraph::new("").block(block), buttons_layout[index + 1]);
 
@@ -93,5 +97,16 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
             text_case_button,
             centered_rect(buttons_layout[index + 1], 80, 10),
         );
+    }
+
+    if let Some(popup) = &state.popup_type {
+        match popup {
+            PopupType::MonsterSlayed => {
+                render_monster_slayed_popup(frame, state, area);
+            }
+            PopupType::Inventory => {
+                render_inventory_popup(frame, state, area);
+            }
+        }
     }
 }

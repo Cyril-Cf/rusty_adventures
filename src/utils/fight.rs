@@ -1,4 +1,3 @@
-use super::consts::LOOT_TABLE;
 use super::game_state::*;
 use super::monster::*;
 use super::player::*;
@@ -97,46 +96,19 @@ pub fn check_for_death(state: &mut GameState) -> bool {
         state.game_over = true;
         return true;
     } else if state.current_monster.health_points <= 0 {
-        let mut rng = rand::thread_rng();
-        let index = rng.gen_range(0..LOOT_TABLE.len());
-        let random_crap = LOOT_TABLE[index];
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: None,
-            description: String::from(""),
-        });
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: None,
-            description: format!(
-                "Monster has been slain! You receive {} experience points and a nice {}.",
-                state.current_monster.experience_given, random_crap
-            ),
-        });
+        state.controls_type = ControlType::MonsterSlayedControls(MonsterSlayedButtons::Continue);
         let level_before = state.player.level;
         state
             .player
             .receive_experience(state.current_monster.experience_given);
         if level_before != state.player.level {
-            state.add_event(GameEvent {
-                roll: None,
-                bool_enemy_turn: None,
-                description: String::from(""),
-            });
-            state.add_event(GameEvent {
-                roll: None,
-                bool_enemy_turn: None,
-                description: String::from(format!(
-                    "LEVEL UP! Your new level: {}",
-                    state.player.level
-                )),
-            });
+            state.current_monster.loot.level_up = true;
         };
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: None,
-            description: String::from(""),
-        });
+        if let Some(item) = &state.current_monster.loot.item {
+            state.player.inventory.push(item.clone());
+        }
+        state.slained_monsters.push(state.current_monster.clone());
+        state.popup_type = Some(PopupType::MonsterSlayed);
         return true;
     };
     false

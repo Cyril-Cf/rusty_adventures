@@ -1,5 +1,6 @@
 use super::consts::*;
 use crate::ui::utils::{FightInfo, FighterInfo};
+use crate::utils::monster::Item;
 use rand::Rng;
 
 pub trait Attack {
@@ -16,6 +17,7 @@ pub struct Player {
     pub name: String,
     pub experience_to_level_up: i32,
     pub image: String,
+    pub inventory: Vec<Item>,
 }
 
 impl Attack for Player {
@@ -90,6 +92,7 @@ impl Player {
             experience: 0,
             experience_to_level_up: PLAYER_BASE_EXPERIENCE_NECESSARY * 2i32.pow(level as u32),
             image: portrait.to_string(),
+            inventory: Vec::new(),
         }
     }
 }
