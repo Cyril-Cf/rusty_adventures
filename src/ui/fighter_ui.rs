@@ -40,7 +40,15 @@ pub fn render_fighter_ui(frame: &mut Frame, area: Rect, fighter_info: FighterInf
         ]),
         Line::from(vec![
             Span::raw("Health: "),
-            Span::styled(fighter_info.health_points.to_string(), Style::new().green()),
+            Span::styled(
+                fighter_info.remaining_health_points.to_string(),
+                Style::new().green(),
+            ),
+            Span::raw("/"),
+            Span::styled(
+                fighter_info.total_health_points.to_string(),
+                Style::new().green(),
+            ),
         ]),
         Line::from(vec![
             Span::raw("Damage: "),

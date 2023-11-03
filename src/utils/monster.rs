@@ -1,57 +1,10 @@
 use super::consts::*;
 use super::game_state::*;
+use super::items::*;
 use super::player::*;
 use crate::ui::utils::{FightInfo, FighterInfo};
 use rand::Rng;
 
-#[derive(Clone)]
-pub enum HealthPotion {
-    SmallPotion,
-    MediumPotion,
-    GiantPotion,
-}
-
-#[derive(Clone)]
-pub enum Item {
-    Potion(HealthPotion),
-}
-
-pub trait ItemDetails {
-    fn get_name(&self) -> String;
-    fn get_description(&self) -> String;
-}
-
-impl ItemDetails for Item {
-    fn get_name(&self) -> String {
-        match self {
-            Item::Potion(potion) => potion.get_name(),
-        }
-    }
-
-    fn get_description(&self) -> String {
-        match self {
-            Item::Potion(potion) => potion.get_description(),
-        }
-    }
-}
-
-impl ItemDetails for HealthPotion {
-    fn get_name(&self) -> String {
-        match self {
-            HealthPotion::SmallPotion => String::from("Small health potion"),
-            HealthPotion::MediumPotion => String::from("Medium health potion"),
-            HealthPotion::GiantPotion => String::from("Giant health potion"),
-        }
-    }
-
-    fn get_description(&self) -> String {
-        match self {
-            HealthPotion::SmallPotion => String::from("Restores 10 HP"),
-            HealthPotion::MediumPotion => String::from("Restores 50 HP"),
-            HealthPotion::GiantPotion => String::from("Restores all HP"),
-        }
-    }
-}
 #[derive(Clone)]
 pub struct Loot {
     pub level_up: bool,
@@ -62,7 +15,8 @@ pub struct Loot {
 
 pub struct Monster {
     pub name: String,
-    pub health_points: i32,
+    pub remaining_health_points: i32,
+    pub total_health_points: i32,
     pub base_damage: std::ops::RangeInclusive<i32>,
     pub level: usize,
     pub description: String,
@@ -78,10 +32,13 @@ impl Attack for Monster {
         roll_for_hit
     }
     fn receive_damage(&mut self, attack_damage: i32) {
-        self.health_points -= attack_damage;
+        self.remaining_health_points -= attack_damage;
     }
-    fn get_health_points(&self) -> i32 {
-        self.health_points
+    fn get_remaining_health_points(&self) -> i32 {
+        self.remaining_health_points
+    }
+    fn get_total_health_points(&self) -> i32 {
+        self.total_health_points
     }
 }
 
@@ -92,7 +49,8 @@ impl FightInfo for Monster {
             description: Some(self.description.clone()),
             experience: None,
             experience_to_level_up: None,
-            health_points: self.health_points,
+            remaining_health_points: self.remaining_health_points,
+            total_health_points: self.total_health_points,
             image: self.image.clone(),
             level: self.level,
             name: self.name.clone(),
@@ -113,7 +71,9 @@ pub fn get_initial_monster() -> Monster {
         image: image.to_string(),
         base_damage: 1..=MONSTER_BASE_RANGE_MAX_POINT * 2i32.pow(level as u32),
         experience_given: MONSTER_BASE_EXPERIENCE_GIVEN * 2i32.pow(level as u32),
-        health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+        // health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+        total_health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+        remaining_health_points: 5,
         level: level as usize,
         loot: loot.clone(),
     }
@@ -132,7 +92,9 @@ pub fn get_random_monster(state: &mut GameState) -> Monster {
         image: image.to_string(),
         base_damage: 1..=MONSTER_BASE_RANGE_MAX_POINT + level as i32,
         experience_given: MONSTER_BASE_EXPERIENCE_GIVEN * 2i32.pow(level as u32),
-        health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+        // health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+        total_health_points: MONSTER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+        remaining_health_points: 5,
         level: level as usize,
         loot: loot.clone(),
     }
@@ -141,7 +103,7 @@ pub fn get_random_monster(state: &mut GameState) -> Monster {
 const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     (
         "Greta the Fierce",
-        "Une redoutable guerrière des royaumes du nord, connue pour sa force et son courage inégalés.",
+        "A formidable warrior from the northern realms, known for her unmatched strength and courage.",
         r#"
         w*W*W*W*w
          \"."."/
@@ -159,7 +121,7 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Zog the Mischievous",
-        "Un farceur rusé qui aime jouer des tours aux voyageurs égarés.",
+        "A cunning trickster who enjoys playing pranks on lost travelers.",
         r#"
         .-^.
         | o |
@@ -174,13 +136,13 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Spike the Spiky",
-        "Un monstre hérissé de pointes qui adore les câlins (attention, il pique !).",
+        "A spiky monster that loves hugs (caution, it's prickly!).",
         r#"
           /-.-\
         /  /  /\
         |o   o|
-        \  ^  /  
-          \ /    
+        \ ^ /
+          \ /
         "#,
         Loot {
             level_up: false,
@@ -189,7 +151,7 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Mystica the Enigmatic",
-        "Une créature mystérieuse qui parle en énigmes et accorde des souhaits.",
+        "A mysterious creature that speaks in riddles and grants wishes.",
         r#"
         .-^-.
         |? ?|
@@ -204,7 +166,7 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Fluffy the Fluffball",
-        "Une boule de poils géante avec un appétit insatiable pour les friandises.",
+        "A giant furball with an insatiable appetite for treats.",
         r#"
          /^\
         /   \
@@ -219,22 +181,22 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Squeaky the Noisy",
-        "Un monstre qui émet des bruits étranges et déroutants à tout moment.",
+        "A monster that emits strange and confusing noises at all times.",
         r#"
          .---.
         /o o o\
         |  ~  |
         \ - - /
-         '---'    
+         '---'
         "#,
         Loot {
             level_up: false,
-            item: None
+            item: None,
         },
     ),
     (
         "Glimmer the Shiny",
-        "Une créature brillante qui attire l'attention avec son éclat éblouissant.",
+        "A shiny creature that captivates attention with its dazzling glow.",
         r#"
           /\
          /o\
@@ -248,12 +210,12 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Sandy the Sandman",
-        "Un gardien des rêves qui peut vous faire vivre vos rêves les plus fous.",
+        "A dream guardian who can make you experience your wildest dreams.",
         r#"
-          .-.  
+          .-.
          /o o\
         |  *  |
-         \ - / 
+         \ - /
           '-'
         "#,
         Loot {
@@ -263,7 +225,7 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Whiskers the Whiskered",
-        "Un félin géant avec de longues moustaches qui prévoit la météo.",
+        "A giant feline with long whiskers that predicts the weather.",
         r#"
         /\_/\ 
        | ^ ^ |
@@ -277,7 +239,7 @@ const MONSTERS: [(&str, &str, &str, Loot); 10] = [
     ),
     (
         "Gloop the Gooey",
-        "Une créature gluante qui peut se transformer en n'importe quoi.",
+        "A gooey creature that can transform into anything.",
         r#"
         .---.
         |* *|

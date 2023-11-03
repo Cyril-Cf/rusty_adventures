@@ -47,7 +47,8 @@ pub fn repositioned_rect(
 }
 
 pub struct FighterInfo {
-    pub health_points: i32,
+    pub remaining_health_points: i32,
+    pub total_health_points: i32,
     pub base_damage: std::ops::RangeInclusive<i32>,
     pub experience: Option<i32>,
     pub level: usize,

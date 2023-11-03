@@ -66,14 +66,20 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
     }
     if player_attacked {
         state.player.receive_damage(damage);
-        description
-            .push_str(format!(" You have {} HP remaining!", state.player.health_points).as_str());
+        description.push_str(
+            format!(
+                " You have {}/{} HP remaining!",
+                state.player.remaining_health_points, state.player.total_health_points
+            )
+            .as_str(),
+        );
     } else {
         state.current_monster.receive_damage(damage);
         description.push_str(
             format!(
-                " Ennemy has {} HP remaining!",
-                state.current_monster.health_points
+                " Ennemy has {}/{} HP remaining!",
+                state.current_monster.remaining_health_points,
+                state.current_monster.total_health_points
             )
             .as_str(),
         );
@@ -86,7 +92,7 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
 }
 
 pub fn check_for_death(state: &mut GameState) -> bool {
-    if state.player.health_points <= 0 {
+    if state.player.remaining_health_points <= 0 {
         state.add_event(GameEvent {
             roll: None,
             bool_enemy_turn: None,
@@ -95,7 +101,7 @@ pub fn check_for_death(state: &mut GameState) -> bool {
         state.player_inputs_accepted = false;
         state.game_over = true;
         return true;
-    } else if state.current_monster.health_points <= 0 {
+    } else if state.current_monster.remaining_health_points <= 0 {
         state.controls_type = ControlType::MonsterSlayedControls(MonsterSlayedButtons::Continue);
         let level_before = state.player.level;
         state

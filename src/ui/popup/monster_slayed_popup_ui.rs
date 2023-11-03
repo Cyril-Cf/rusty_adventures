@@ -1,7 +1,7 @@
 use crate::ui::consts::*;
 use crate::ui::utils::centered_rect;
 use crate::utils::game_state::ControlType;
-use crate::utils::monster::ItemDetails;
+use crate::utils::items::ItemActions;
 use crate::GameState;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
@@ -87,7 +87,7 @@ pub fn render_monster_slayed_popup(frame: &mut Frame, state: &mut GameState, are
 
         frame.render_widget(
             text_case_button,
-            centered_rect(buttons_layout[index], 50, 50),
+            centered_rect(buttons_layout[index], 50, 30),
         );
     }
 }

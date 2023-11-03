@@ -58,12 +58,10 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
     let buttons_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Length(40),
-            Constraint::Length(10),
-            Constraint::Length(10),
-            Constraint::Length(10),
-            Constraint::Length(10),
-            Constraint::Length(20),
+            Constraint::Length(25),
+            Constraint::Length(25),
+            Constraint::Length(25),
+            Constraint::Length(25),
         ])
         .split(inner_fight_layout[1].inner(&Margin {
             vertical: 0,
@@ -86,7 +84,7 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(color));
 
-        frame.render_widget(Paragraph::new("").block(block), buttons_layout[index + 1]);
+        frame.render_widget(Paragraph::new("").block(block), buttons_layout[index]);
 
         let text_case_button = Paragraph::new(button.0)
             .block(Block::new())
@@ -95,10 +93,9 @@ pub fn render_fights_ui(frame: &mut Frame, state: &mut GameState, area: Rect) {
 
         frame.render_widget(
             text_case_button,
-            centered_rect(buttons_layout[index + 1], 80, 10),
+            centered_rect(buttons_layout[index], 50, 30),
         );
     }
-
     if let Some(popup) = &state.popup_type {
         match popup {
             PopupType::MonsterSlayed => {

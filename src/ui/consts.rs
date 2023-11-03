@@ -18,6 +18,6 @@ pub const MONSTER_SLAYED_UI_BUTTONS: [(&str, Color, MonsterSlayedButtons); 2] = 
 ];
 
 pub const INVENTORY_UI_BUTTONS: [(&str, Color, InventoryButtons); 2] = [
-    ("Use", Color::Red, InventoryButtons::Use),
+    ("Use", Color::Red, InventoryButtons::Use(0)),
     ("Cancel", Color::Blue, InventoryButtons::Cancel),
 ];

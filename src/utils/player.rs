@@ -1,16 +1,20 @@
 use super::consts::*;
+use super::game_state::GameState;
+use super::items::ItemActions;
 use crate::ui::utils::{FightInfo, FighterInfo};
-use crate::utils::monster::Item;
+use crate::utils::items::Item;
 use rand::Rng;
 
 pub trait Attack {
     fn get_attack_damage(&self) -> i32;
     fn receive_damage(&mut self, attack_damage: i32);
-    fn get_health_points(&self) -> i32;
+    fn get_remaining_health_points(&self) -> i32;
+    fn get_total_health_points(&self) -> i32;
 }
 
 pub struct Player {
-    pub health_points: i32,
+    pub remaining_health_points: i32,
+    pub total_health_points: i32,
     pub base_damage: std::ops::RangeInclusive<i32>,
     pub experience: i32,
     pub level: usize,
@@ -27,10 +31,13 @@ impl Attack for Player {
         roll_for_hit
     }
     fn receive_damage(&mut self, attack_damage: i32) {
-        self.health_points -= attack_damage;
+        self.remaining_health_points -= attack_damage;
     }
-    fn get_health_points(&self) -> i32 {
-        self.health_points
+    fn get_remaining_health_points(&self) -> i32 {
+        self.remaining_health_points
+    }
+    fn get_total_health_points(&self) -> i32 {
+        self.total_health_points
     }
 }
 
@@ -41,7 +48,8 @@ impl FightInfo for Player {
             description: None,
             experience: Some(self.experience),
             experience_to_level_up: None,
-            health_points: self.health_points,
+            remaining_health_points: self.remaining_health_points,
+            total_health_points: self.total_health_points,
             image: self.image.clone(),
             level: self.level,
             name: self.name.clone(),
@@ -54,7 +62,7 @@ impl Player {
         self.experience_to_level_up -= experience_gained;
         if self.experience_to_level_up <= 0 {
             self.level += 1;
-            self.health_points = PLAYER_BASE_HEALTH_POINT * 2i32.pow(self.level as u32);
+            self.total_health_points = PLAYER_BASE_HEALTH_POINT * 2i32.pow(self.level as u32);
             self.base_damage = 1..=PLAYER_BASE_RANGE_MAX_POINT + self.level as i32;
             if self.experience_to_level_up < 0 {
                 self.experience = self.experience_to_level_up.abs();
@@ -65,6 +73,7 @@ impl Player {
             self.experience += experience_gained;
         }
     }
+
     pub fn create_player(name: String) -> Player {
         let level = 1;
 
@@ -85,7 +94,8 @@ impl Player {
         "#;
 
         Player {
-            health_points: PLAYER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+            remaining_health_points: PLAYER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
+            total_health_points: PLAYER_BASE_HEALTH_POINT * 2i32.pow(level as u32),
             base_damage: 1..=PLAYER_BASE_RANGE_MAX_POINT + level as i32,
             name,
             level,

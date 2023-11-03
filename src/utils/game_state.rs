@@ -1,4 +1,5 @@
 use super::fight::*;
+use super::items::{Item, ItemActions};
 use super::monster::*;
 use super::player::*;
 use crate::ui::consts::{FIGHT_UI_BUTTONS, INVENTORY_UI_BUTTONS, MONSTER_SLAYED_UI_BUTTONS};
@@ -72,7 +73,7 @@ pub enum ControlType {
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum InventoryButtons {
-    Use,
+    Use(usize),
     Cancel,
 }
 
@@ -211,6 +212,26 @@ impl GameState {
         }
     }
 
+    pub fn let_player_attack(&mut self) {
+        if self.player_inputs_accepted && !self.game_over {
+            roll_attack(self, false);
+            check_for_death(self);
+
+            if !self.game_over && self.current_monster.remaining_health_points > 0 {
+                self.let_monster_attack();
+            }
+        }
+    }
+
+    pub fn let_monster_attack(&mut self) {
+        switch_attack_turn(self, false);
+        roll_attack(self, true);
+        let bool_death_occured = check_for_death(self);
+        if !bool_death_occured {
+            switch_attack_turn(self, true);
+        }
+    }
+
     pub fn add_event(&mut self, event: GameEvent) {
         self.events.push(event);
         if self.events.len() > 30 {
@@ -300,19 +321,7 @@ impl GameState {
         match &self.controls_type {
             ControlType::FightControls(selected_button) => match selected_button {
                 FightButtons::Attack => {
-                    if self.player_inputs_accepted && !self.game_over {
-                        roll_attack(self, false);
-                        check_for_death(self);
-
-                        if !self.game_over {
-                            switch_attack_turn(self, false);
-                            roll_attack(self, true);
-                            let bool_death_occured = check_for_death(self);
-                            if !bool_death_occured {
-                                switch_attack_turn(self, true);
-                            }
-                        }
-                    }
+                    self.let_player_attack();
                 }
                 FightButtons::Inventory => {
                     self.controls_type = ControlType::InventoryControls(InventoryButtons::Cancel);
@@ -324,15 +333,34 @@ impl GameState {
                 if selected_button == &MonsterSlayedButtons::Continue {
                     self.controls_type = ControlType::FightControls(FightButtons::Attack);
                     self.popup_type = None;
+                    self.events = Vec::new();
                     self.initiate();
                 }
             }
-            ControlType::InventoryControls(selected_button) => {
-                if selected_button == &InventoryButtons::Cancel {
+            ControlType::InventoryControls(selected_button) => match selected_button {
+                InventoryButtons::Cancel => {
                     self.controls_type = ControlType::FightControls(FightButtons::Attack);
                     self.popup_type = None;
                 }
-            }
+                InventoryButtons::Use(item_index) => {
+                    if item_index >= &0 && item_index <= &(self.player.inventory.len() - 1) {
+                        let item = self.player.inventory.remove(*item_index);
+                        item.use_item(self);
+                        self.add_event(GameEvent {
+                            roll: None,
+                            description: format!(
+                                "{} has been used !({})",
+                                item.get_name(),
+                                item.get_description()
+                            ),
+                            bool_enemy_turn: None,
+                        });
+                        self.controls_type = ControlType::FightControls(FightButtons::Attack);
+                        self.popup_type = None;
+                        self.let_monster_attack();
+                    }
+                }
+            },
         }
     }
 
