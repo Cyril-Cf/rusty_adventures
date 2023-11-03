@@ -1,4 +1,3 @@
-use super::consts::PLAYER_BASE_HEALTH_POINT;
 use crate::GameState;
 use ratatui::widgets::Row;
 

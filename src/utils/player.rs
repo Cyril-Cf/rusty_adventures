@@ -1,6 +1,4 @@
 use super::consts::*;
-use super::game_state::GameState;
-use super::items::ItemActions;
 use crate::ui::utils::{FightInfo, FighterInfo};
 use crate::utils::items::Item;
 use rand::Rng;

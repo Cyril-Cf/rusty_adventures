@@ -1,5 +1,5 @@
 use super::fight::*;
-use super::items::{Item, ItemActions};
+use super::items::ItemActions;
 use super::monster::*;
 use super::player::*;
 use crate::ui::consts::{FIGHT_UI_BUTTONS, INVENTORY_UI_BUTTONS, MONSTER_SLAYED_UI_BUTTONS};
@@ -64,26 +64,26 @@ pub struct PlayerChoice {
     pub messages: Vec<String>,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum ControlType {
     FightControls(FightButtons),
     MonsterSlayedControls(MonsterSlayedButtons),
     InventoryControls(InventoryButtons),
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum InventoryButtons {
     Use(usize),
     Cancel,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum MonsterSlayedButtons {
     Continue,
     Skip,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum FightButtons {
     Attack,
     Inventory,
@@ -94,6 +94,8 @@ pub enum FightButtons {
 trait IncrementDecrement {
     fn increment_horizontal(&self, current: usize) -> Self;
     fn decrement_horizontal(&self, current: usize) -> Self;
+    fn increment_vertical(&self, current: usize, state: &GameState) -> Self;
+    fn decrement_vertical(&self, current: usize, state: &GameState) -> Self;
 }
 
 impl IncrementDecrement for ControlType {
@@ -115,6 +117,21 @@ impl IncrementDecrement for ControlType {
                 if let Some(button) = INVENTORY_UI_BUTTONS.get(current + 1) {
                     return ControlType::InventoryControls(button.2);
                 };
+                *self
+            }
+        }
+    }
+
+    fn increment_vertical(&self, current: usize, state: &GameState) -> Self {
+        match self {
+            ControlType::FightControls(_) => *self,
+            ControlType::MonsterSlayedControls(_) => *self,
+            ControlType::InventoryControls(_) => {
+                if current <= state.player.inventory.len() {
+                    if let Some(_) = state.player.inventory.get(current + 1) {
+                        return ControlType::InventoryControls(InventoryButtons::Use(current + 1));
+                    };
+                }
                 *self
             }
         }
@@ -142,6 +159,21 @@ impl IncrementDecrement for ControlType {
                 if current > 0 {
                     if let Some(button) = INVENTORY_UI_BUTTONS.get(current - 1) {
                         return ControlType::InventoryControls(button.2);
+                    };
+                }
+                *self
+            }
+        }
+    }
+
+    fn decrement_vertical(&self, current: usize, state: &GameState) -> Self {
+        match self {
+            ControlType::FightControls(_) => *self,
+            ControlType::MonsterSlayedControls(_) => *self,
+            ControlType::InventoryControls(_) => {
+                if current > 0 {
+                    if let Some(_) = state.player.inventory.get(current - 1) {
+                        return ControlType::InventoryControls(InventoryButtons::Use(current - 1));
                     };
                 }
                 *self
@@ -278,10 +310,13 @@ impl GameState {
                 };
             }
             ControlType::InventoryControls(button_selected) => {
-                if let Some(current_index) = INVENTORY_UI_BUTTONS
-                    .iter()
-                    .position(|&(_, _, b)| b == *button_selected)
-                {
+                if let Some(current_index) = INVENTORY_UI_BUTTONS.iter().position(|&(_, _, b)| {
+                    match (&b, &button_selected) {
+                        (&InventoryButtons::Cancel, &InventoryButtons::Cancel) => true,
+                        (&InventoryButtons::Use(_), &InventoryButtons::Use(_)) => true,
+                        _ => false,
+                    }
+                }) {
                     match value {
                         -1 => {
                             self.controls_type =
@@ -299,7 +334,7 @@ impl GameState {
     }
 
     pub fn move_vertical(&mut self, value: i32) {
-        match self.controls_type {
+        match &self.controls_type {
             ControlType::FightControls(_) => match value {
                 -1 => {
                     if self.scroll_state.current_scroll_line != 0 {
@@ -312,6 +347,20 @@ impl GameState {
                     }
                 }
                 _ => panic!("Value must be -1 or 1"),
+            },
+            ControlType::InventoryControls(button_selected) => match button_selected {
+                InventoryButtons::Use(current_index) => match value {
+                    -1 => {
+                        self.controls_type =
+                            self.controls_type.decrement_vertical(*current_index, &self);
+                    }
+                    1 => {
+                        self.controls_type =
+                            self.controls_type.increment_vertical(*current_index, &self);
+                    }
+                    _ => panic!("Value must be -1 or 1"),
+                },
+                _ => {}
             },
             _ => {}
         }
@@ -343,21 +392,23 @@ impl GameState {
                     self.popup_type = None;
                 }
                 InventoryButtons::Use(item_index) => {
-                    if item_index >= &0 && item_index <= &(self.player.inventory.len() - 1) {
-                        let item = self.player.inventory.remove(*item_index);
-                        item.use_item(self);
-                        self.add_event(GameEvent {
-                            roll: None,
-                            description: format!(
-                                "{} has been used !({})",
-                                item.get_name(),
-                                item.get_description()
-                            ),
-                            bool_enemy_turn: None,
-                        });
-                        self.controls_type = ControlType::FightControls(FightButtons::Attack);
-                        self.popup_type = None;
-                        self.let_monster_attack();
+                    if !self.player.inventory.is_empty() {
+                        if item_index >= &0 {
+                            let item = self.player.inventory.remove(*item_index);
+                            item.use_item(self);
+                            self.add_event(GameEvent {
+                                roll: None,
+                                description: format!(
+                                    "{} has been used !({})",
+                                    item.get_name(),
+                                    item.get_description()
+                                ),
+                                bool_enemy_turn: None,
+                            });
+                            self.controls_type = ControlType::FightControls(FightButtons::Attack);
+                            self.popup_type = None;
+                            self.let_monster_attack();
+                        }
                     }
                 }
             },

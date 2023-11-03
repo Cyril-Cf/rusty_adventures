@@ -1,6 +1,7 @@
 use crate::ui::consts::*;
 use crate::ui::utils::centered_rect;
 use crate::utils::game_state::ControlType;
+use crate::utils::game_state::InventoryButtons;
 use crate::GameState;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
@@ -26,7 +27,23 @@ pub fn render_inventory_popup(frame: &mut Frame, state: &mut GameState, area: Re
             .inventory
             .clone()
             .into_iter()
-            .map(|item| item.into())
+            .enumerate()
+            .map(|(index, item)| {
+                let row: Row = item.into();
+                match state.controls_type {
+                    ControlType::InventoryControls(button) => match button {
+                        InventoryButtons::Use(item_index) => {
+                            if index == item_index {
+                                row.style(Style::default().fg(Color::Red))
+                            } else {
+                                row
+                            }
+                        }
+                        _ => row,
+                    },
+                    _ => row,
+                }
+            })
             .collect::<Vec<Row>>(),
     )
     .style(Style::default().fg(Color::White))
@@ -49,12 +66,12 @@ pub fn render_inventory_popup(frame: &mut Frame, state: &mut GameState, area: Re
         }));
 
     for (index, button) in INVENTORY_UI_BUTTONS.iter().enumerate() {
-        let color = match &state.controls_type {
+        let color = match state.controls_type {
             ControlType::InventoryControls(button_selected) => {
-                if button_selected == &button.2 {
-                    button.1
-                } else {
-                    Color::White
+                match (&button_selected, &button.2) {
+                    (&InventoryButtons::Cancel, &InventoryButtons::Cancel) => button.1,
+                    (&InventoryButtons::Use(_), &InventoryButtons::Use(_)) => button.1,
+                    _ => Color::White,
                 }
             }
             _ => Color::White,
