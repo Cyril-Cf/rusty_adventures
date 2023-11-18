@@ -29,7 +29,7 @@ impl GameEvent {
         GameEvent {
             roll: Some(roll.to_string()),
             description: description.to_string(),
-            bool_enemy_turn: Some(true),
+            bool_enemy_turn: Some(false),
             timestamp: Instant::now(),
         }
     }
@@ -37,7 +37,7 @@ impl GameEvent {
         GameEvent {
             roll: Some(roll.to_string()),
             description: description.to_string(),
-            bool_enemy_turn: Some(false),
+            bool_enemy_turn: Some(true),
             timestamp: Instant::now(),
         }
     }

@@ -64,6 +64,10 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
             )
             .as_str(),
         );
+        state.add_event(GameEvent::monster_attack(
+            &description,
+            roll_for_hit.to_string().as_str(),
+        ));
     } else {
         state.current_monster.receive_damage(damage);
         description.push_str(
@@ -74,11 +78,11 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
             )
             .as_str(),
         );
+        state.add_event(GameEvent::user_attack(
+            &description,
+            roll_for_hit.to_string().as_str(),
+        ));
     };
-    state.add_event(GameEvent::user_attack(
-        &description,
-        roll_for_hit.to_string().as_str(),
-    ));
 }
 
 pub fn check_for_death(state: &mut GameState) -> bool {
