@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use super::fight::*;
 use super::items::ItemActions;
 use super::monster::*;
@@ -11,6 +13,42 @@ pub struct GameEvent {
     pub roll: Option<String>,
     pub description: String,
     pub bool_enemy_turn: Option<bool>,
+    pub timestamp: Instant,
+}
+
+impl GameEvent {
+    pub fn neutral(description: &str) -> Self {
+        GameEvent {
+            roll: None,
+            description: description.to_string(),
+            bool_enemy_turn: None,
+            timestamp: Instant::now(),
+        }
+    }
+    pub fn user_attack(description: &str, roll: &str) -> Self {
+        GameEvent {
+            roll: Some(roll.to_string()),
+            description: description.to_string(),
+            bool_enemy_turn: Some(true),
+            timestamp: Instant::now(),
+        }
+    }
+    pub fn monster_attack(description: &str, roll: &str) -> Self {
+        GameEvent {
+            roll: Some(roll.to_string()),
+            description: description.to_string(),
+            bool_enemy_turn: Some(false),
+            timestamp: Instant::now(),
+        }
+    }
+    pub fn switch_attack(description: &str, bool_enemy_turn: bool) -> Self {
+        GameEvent {
+            roll: None,
+            description: description.to_string(),
+            bool_enemy_turn: Some(bool_enemy_turn),
+            timestamp: Instant::now(),
+        }
+    }
 }
 
 impl From<GameEvent> for Line<'_> {
@@ -40,7 +78,9 @@ impl From<GameEvent> for Line<'_> {
                 style = style.green();
             }
         }
-        spans.push(Span::styled(event.description, style));
+        let chars_to_print = (event.timestamp.elapsed().as_secs_f32() * 15.0) as usize;
+        let current_content: String = event.description.chars().take(chars_to_print).collect();
+        spans.push(Span::styled(current_content, style));
         let mut line = Line::from(spans);
         if let Some(bool_enemy_turn) = event.bool_enemy_turn {
             if bool_enemy_turn {
@@ -396,15 +436,11 @@ impl GameState {
                         if item_index >= &0 {
                             let item = self.player.inventory.remove(*item_index);
                             item.use_item(self);
-                            self.add_event(GameEvent {
-                                roll: None,
-                                description: format!(
-                                    "{} has been used !({})",
-                                    item.get_name(),
-                                    item.get_description()
-                                ),
-                                bool_enemy_turn: None,
-                            });
+                            self.add_event(GameEvent::neutral(&format!(
+                                "{} has been used !({})",
+                                item.get_name(),
+                                item.get_description()
+                            )));
                             self.controls_type = ControlType::FightControls(FightButtons::Attack);
                             self.popup_type = None;
                             self.let_monster_attack();

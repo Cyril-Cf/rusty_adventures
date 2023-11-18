@@ -5,6 +5,7 @@ use crossterm::{
 };
 use ratatui::prelude::*;
 use std::io::{self, stdout};
+use std::time::Duration;
 use ui::app_ui::render_app_ui;
 use ui::game_over_ui::render_game_over_ui;
 use ui::menu_ui::*;
@@ -46,20 +47,22 @@ fn run_app(
             return Ok(());
         }
 
-        if let Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press {
-                match key.code {
-                    KeyCode::Char('q') => {
-                        disable_raw_mode()?;
-                        stdout().execute(LeaveAlternateScreen)?;
-                        return Ok(());
+        if event::poll(Duration::from_secs_f32(1. / 60.))? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => {
+                            disable_raw_mode()?;
+                            stdout().execute(LeaveAlternateScreen)?;
+                            return Ok(());
+                        }
+                        KeyCode::Left => state.move_horizontal(-1),
+                        KeyCode::Right => state.move_horizontal(1),
+                        KeyCode::Up => state.move_vertical(-1),
+                        KeyCode::Down => state.move_vertical(1),
+                        KeyCode::Enter => state.select_button(),
+                        _ => {}
                     }
-                    KeyCode::Left => state.move_horizontal(-1),
-                    KeyCode::Right => state.move_horizontal(1),
-                    KeyCode::Up => state.move_vertical(-1),
-                    KeyCode::Down => state.move_vertical(1),
-                    KeyCode::Enter => state.select_button(),
-                    _ => {}
                 }
             }
         }

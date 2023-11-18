@@ -4,26 +4,17 @@ use super::player::*;
 use rand::Rng;
 
 pub fn roll_initiative(state: &mut GameState) -> bool {
-    state.add_event(GameEvent {
-        roll: None,
-        bool_enemy_turn: None,
-        description: String::from("Rolling initiative......"),
-    });
+    state.add_event(GameEvent::neutral("Rolling initiative......"));
     let mut rng = rand::thread_rng();
     let random_variable: i32 = rng.gen_range(0..=1);
     if random_variable == 0 {
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: None,
-            description: String::from("You start!"),
-        });
+        state.add_event(GameEvent::neutral("You start!"));
         state.player_inputs_accepted = true;
     } else {
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: None,
-            description: String::from(format!("{} is starting first!", state.current_monster.name)),
-        });
+        state.add_event(GameEvent::neutral(&format!(
+            "{} is starting first!",
+            state.current_monster.name
+        )));
     };
     random_variable == 0
 }
@@ -84,20 +75,15 @@ pub fn roll_attack(state: &mut GameState, player_attacked: bool) {
             .as_str(),
         );
     };
-    state.add_event(GameEvent {
-        roll: Some(roll_for_hit.to_string()),
-        bool_enemy_turn: Some(player_attacked),
-        description: String::from(description),
-    });
+    state.add_event(GameEvent::user_attack(
+        &description,
+        roll_for_hit.to_string().as_str(),
+    ));
 }
 
 pub fn check_for_death(state: &mut GameState) -> bool {
     if state.player.remaining_health_points <= 0 {
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: None,
-            description: String::from("GAME OVER..."),
-        });
+        state.add_event(GameEvent::neutral("GAME OVER..."));
         state.player_inputs_accepted = false;
         state.game_over = true;
         return true;
@@ -121,54 +107,32 @@ pub fn check_for_death(state: &mut GameState) -> bool {
 }
 
 pub fn switch_attack_turn(state: &mut GameState, give_turn_to_player: bool) {
-    state.add_event(GameEvent {
-        roll: None,
-        bool_enemy_turn: None,
-        description: String::from(""),
-    });
+    state.add_event(GameEvent::neutral(""));
     if give_turn_to_player {
         state.player_inputs_accepted = true;
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: Some(!give_turn_to_player),
-            description: String::from("It's your turn! CHARGE!"),
-        });
+        state.add_event(GameEvent::switch_attack(
+            "It's your turn! CHARGE!",
+            !give_turn_to_player,
+        ));
     } else {
         state.player_inputs_accepted = false;
-        state.add_event(GameEvent {
-            roll: None,
-            bool_enemy_turn: Some(!give_turn_to_player),
-            description: String::from("It's the enemy's turn!"),
-        });
+        state.add_event(GameEvent::switch_attack(
+            "It's the enemy's turn!",
+            !give_turn_to_player,
+        ));
     }
 }
 
 pub fn start_new_battle(state: &mut GameState) {
     state.current_monster = get_random_monster(state);
-    state.add_event(GameEvent {
-        roll: None,
-        bool_enemy_turn: None,
-        description: String::from(format!(
-            "A wild {} appears, brace yourself!",
-            state.current_monster.name
-        )),
-    });
-    state.add_event(GameEvent {
-        roll: None,
-        bool_enemy_turn: None,
-        description: String::from(""),
-    });
+    state.add_event(GameEvent::neutral(&format!(
+        "A wild {} appears, brace yourself!",
+        state.current_monster.name
+    )));
+    state.add_event(GameEvent::neutral(""));
 }
 
 pub fn initiate_logs(events: &mut Vec<GameEvent>) {
-    events.push(GameEvent {
-        roll: None,
-        bool_enemy_turn: None,
-        description: String::from("New game is starting..."),
-    });
-    events.push(GameEvent {
-        roll: None,
-        bool_enemy_turn: None,
-        description: String::from(""),
-    });
+    events.push(GameEvent::neutral("New game is starting..."));
+    events.push(GameEvent::neutral(""));
 }
